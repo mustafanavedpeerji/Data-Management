@@ -1,13 +1,88 @@
 import React, { useEffect, useState } from "react";
 
+// Type definitions
+interface Industry {
+  id: number;
+  industry_name: string;
+  category: string;
+  parent_id: number | null;
+  children?: Industry[];
+}
+
+interface DraggableBlockProps {
+  node: Industry;
+  onDelete: (id: number) => void;
+  onRename: (id: number, name: string) => void;
+  onAddChild: (parentId: number) => void;
+  onMoveToRoot: (id: number) => void;
+  onMoveToParent: (childId: number, newParentId: number) => void;
+  children?: React.ReactNode;
+  level?: number;
+}
+
+interface MainCategoryBlockProps {
+  category: Industry;
+  isSelected: boolean;
+  onClick: (category: Industry) => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDragLeave: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent) => void;
+  onDelete: (id: number) => void;
+  dragOver: boolean;
+  position: number | null;
+}
+
+interface ComparisonPaneProps {
+  category: Industry;
+  position: number;
+  onClose: () => void;
+  tree: Industry[];
+  onDelete: (id: number) => void;
+  onRename: (id: number, name: string) => void;
+  onAddChild: (parentId: number) => void;
+  onMoveToRoot: (id: number) => void;
+  onMoveToParent: (childId: number, newParentId: number) => void;
+  onDropFromOtherPane: (childId: number, newMainCategoryId: number) => void;
+}
+
+interface TreeRecursiveProps {
+  nodes: Industry[];
+  onDelete: (id: number) => void;
+  onRename: (id: number, name: string) => void;
+  onAddChild: (parentId: number) => void;
+  onMoveToRoot: (id: number) => void;
+  onMoveToParent: (childId: number, newParentId: number) => void;
+  level?: number;
+}
+
+interface IndustryTreeProps {
+  selectedIndustryId?: number;
+}
+
+interface DragData {
+  id: number;
+  type: 'main' | 'child';
+  name?: string;
+  level?: number;
+}
+
 // ----------- Draggable Block ----------
-const DraggableBlock = ({ node, onDelete, onRename, onAddChild, onMoveToRoot, onMoveToParent, children, level = 0 }) => {
+const DraggableBlock: React.FC<DraggableBlockProps> = ({ 
+  node, 
+  onDelete, 
+  onRename, 
+  onAddChild, 
+  onMoveToRoot, 
+  onMoveToParent, 
+  children, 
+  level = 0 
+}) => {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(node.industry_name);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOver, setDragOver] = useState(false);
 
-  const style = {
+  const style: React.CSSProperties = {
     padding: "12px",
     margin: "4px 0",
     border: isDragging ? "2px dashed #007cba" : dragOver ? "2px solid #007cba" : "1px solid #ddd",
@@ -18,7 +93,7 @@ const DraggableBlock = ({ node, onDelete, onRename, onAddChild, onMoveToRoot, on
     cursor: isDragging ? "grabbing" : "grab",
     boxShadow: isDragging ? "0 8px 25px rgba(0,0,0,0.2)" : dragOver ? "0 4px 15px rgba(0,124,186,0.2)" : "0 2px 4px rgba(0,0,0,0.1)",
     transition: isDragging ? "none" : "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-    position: "relative",
+    position: "relative" as const,
     transform: isDragging ? "rotate(2deg) scale(1.02)" : "none",
     zIndex: isDragging ? 1000 : 1,
   };
@@ -30,7 +105,7 @@ const DraggableBlock = ({ node, onDelete, onRename, onAddChild, onMoveToRoot, on
     setEditing(false);
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSave();
     }
@@ -40,7 +115,7 @@ const DraggableBlock = ({ node, onDelete, onRename, onAddChild, onMoveToRoot, on
     }
   };
 
-  const handleDragStart = (e) => {
+  const handleDragStart = (e: React.DragEvent) => {
     if (editing) {
       e.preventDefault();
       return;
@@ -54,9 +129,9 @@ const DraggableBlock = ({ node, onDelete, onRename, onAddChild, onMoveToRoot, on
       type: 'child',
       name: node.industry_name,
       level: level
-    }));
+    } as DragData));
     
-    const dragImage = e.currentTarget.cloneNode(true);
+    const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
     dragImage.style.transform = "rotate(5deg)";
     dragImage.style.opacity = "0.8";
     dragImage.style.background = "#e6f3ff";
@@ -73,13 +148,13 @@ const DraggableBlock = ({ node, onDelete, onRename, onAddChild, onMoveToRoot, on
     }, 0);
   };
 
-  const handleDragEnd = (e) => {
+  const handleDragEnd = (e: React.DragEvent) => {
     e.stopPropagation();
     setIsDragging(false);
     setDragOver(false);
   };
 
-  const handleDragOver = (e) => {
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -87,7 +162,7 @@ const DraggableBlock = ({ node, onDelete, onRename, onAddChild, onMoveToRoot, on
       const dragDataString = e.dataTransfer.getData("text/plain");
       if (!dragDataString) return;
       
-      const dragData = JSON.parse(dragDataString);
+      const dragData: DragData = JSON.parse(dragDataString);
       const draggedId = dragData.id;
       
       if (draggedId === node.id || isDescendant(node, draggedId)) {
@@ -102,9 +177,9 @@ const DraggableBlock = ({ node, onDelete, onRename, onAddChild, onMoveToRoot, on
     }
   };
 
-  const handleDragLeave = (e) => {
+  const handleDragLeave = (e: React.DragEvent) => {
     e.stopPropagation();
-    const rect = e.currentTarget.getBoundingClientRect();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
     
@@ -113,7 +188,7 @@ const DraggableBlock = ({ node, onDelete, onRename, onAddChild, onMoveToRoot, on
     }
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragOver(false);
@@ -122,7 +197,7 @@ const DraggableBlock = ({ node, onDelete, onRename, onAddChild, onMoveToRoot, on
       const dragDataString = e.dataTransfer.getData("text/plain");
       if (!dragDataString) return;
       
-      const dragData = JSON.parse(dragDataString);
+      const dragData: DragData = JSON.parse(dragDataString);
       const draggedId = dragData.id;
       
       if (draggedId && draggedId !== node.id && !isDescendant(node, draggedId)) {
@@ -133,7 +208,7 @@ const DraggableBlock = ({ node, onDelete, onRename, onAddChild, onMoveToRoot, on
     }
   };
 
-  const isDescendant = (parentNode, targetId) => {
+  const isDescendant = (parentNode: Industry, targetId: number): boolean => {
     if (!parentNode.children) return false;
     
     for (let child of parentNode.children) {
@@ -242,14 +317,16 @@ const DraggableBlock = ({ node, onDelete, onRename, onAddChild, onMoveToRoot, on
                 boxShadow: "0 2px 4px rgba(40,167,69,0.2)",
               }}
               onMouseEnter={(e) => {
-                e.target.style.background = "#218838";
-                e.target.style.transform = "translateY(-1px)";
-                e.target.style.boxShadow = "0 4px 8px rgba(40,167,69,0.3)";
+                const target = e.target as HTMLButtonElement;
+                target.style.background = "#218838";
+                target.style.transform = "translateY(-1px)";
+                target.style.boxShadow = "0 4px 8px rgba(40,167,69,0.3)";
               }}
               onMouseLeave={(e) => {
-                e.target.style.background = "#28a745";
-                e.target.style.transform = "translateY(0)";
-                e.target.style.boxShadow = "0 2px 4px rgba(40,167,69,0.2)";
+                const target = e.target as HTMLButtonElement;
+                target.style.background = "#28a745";
+                target.style.transform = "translateY(0)";
+                target.style.boxShadow = "0 2px 4px rgba(40,167,69,0.2)";
               }}
             >
               ↑
@@ -275,14 +352,16 @@ const DraggableBlock = ({ node, onDelete, onRename, onAddChild, onMoveToRoot, on
               boxShadow: "0 2px 4px rgba(0,124,186,0.2)",
             }}
             onMouseEnter={(e) => {
-              e.target.style.background = "#0056b3";
-              e.target.style.transform = "translateY(-1px)";
-              e.target.style.boxShadow = "0 4px 8px rgba(0,124,186,0.3)";
+              const target = e.target as HTMLButtonElement;
+              target.style.background = "#0056b3";
+              target.style.transform = "translateY(-1px)";
+              target.style.boxShadow = "0 4px 8px rgba(0,124,186,0.3)";
             }}
             onMouseLeave={(e) => {
-              e.target.style.background = "#007cba";
-              e.target.style.transform = "translateY(0)";
-              e.target.style.boxShadow = "0 2px 4px rgba(0,124,186,0.2)";
+              const target = e.target as HTMLButtonElement;
+              target.style.background = "#007cba";
+              target.style.transform = "translateY(0)";
+              target.style.boxShadow = "0 2px 4px rgba(0,124,186,0.2)";
             }}
           >
             +
@@ -307,14 +386,16 @@ const DraggableBlock = ({ node, onDelete, onRename, onAddChild, onMoveToRoot, on
               boxShadow: "0 2px 4px rgba(220,53,69,0.2)",
             }}
             onMouseEnter={(e) => {
-              e.target.style.background = "#c82333";
-              e.target.style.transform = "translateY(-1px)";
-              e.target.style.boxShadow = "0 4px 8px rgba(220,53,69,0.3)";
+              const target = e.target as HTMLButtonElement;
+              target.style.background = "#c82333";
+              target.style.transform = "translateY(-1px)";
+              target.style.boxShadow = "0 4px 8px rgba(220,53,69,0.3)";
             }}
             onMouseLeave={(e) => {
-              e.target.style.background = "#dc3545";
-              e.target.style.transform = "translateY(0)";
-              e.target.style.boxShadow = "0 2px 4px rgba(220,53,69,0.2)";
+              const target = e.target as HTMLButtonElement;
+              target.style.background = "#dc3545";
+              target.style.transform = "translateY(0)";
+              target.style.boxShadow = "0 2px 4px rgba(220,53,69,0.2)";
             }}
           >
             ×
@@ -350,7 +431,17 @@ const DraggableBlock = ({ node, onDelete, onRename, onAddChild, onMoveToRoot, on
 };
 
 // ----------- Main Category Block ----------
-const MainCategoryBlock = ({ category, isSelected, onClick, onDragOver, onDragLeave, onDrop, onDelete, dragOver, position }) => {
+const MainCategoryBlock: React.FC<MainCategoryBlockProps> = ({ 
+  category, 
+  isSelected, 
+  onClick, 
+  onDragOver, 
+  onDragLeave, 
+  onDrop, 
+  onDelete, 
+  dragOver, 
+  position 
+}) => {
   const [isDragging, setIsDragging] = useState(false);
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(category.industry_name);
@@ -363,7 +454,7 @@ const MainCategoryBlock = ({ category, isSelected, onClick, onDragOver, onDragLe
     setEditing(false);
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
       handleSave();
     }
@@ -373,7 +464,7 @@ const MainCategoryBlock = ({ category, isSelected, onClick, onDragOver, onDragLe
     }
   };
 
-  const handleDragStart = (e) => {
+  const handleDragStart = (e: React.DragEvent) => {
     if (editing) {
       e.preventDefault();
       return;
@@ -381,7 +472,7 @@ const MainCategoryBlock = ({ category, isSelected, onClick, onDragOver, onDragLe
     
     setIsDragging(true);
     e.dataTransfer.effectAllowed = "move";
-    e.dataTransfer.setData("text/plain", JSON.stringify({ id: category.id, type: 'main' }));
+    e.dataTransfer.setData("text/plain", JSON.stringify({ id: category.id, type: 'main' } as DragData));
   };
 
   const handleDragEnd = () => {
@@ -487,12 +578,14 @@ const MainCategoryBlock = ({ category, isSelected, onClick, onDragOver, onDragLe
           opacity: 0.8
         }}
         onMouseEnter={(e) => {
-          e.target.style.opacity = "1";
-          e.target.style.transform = "scale(1.1)";
+          const target = e.target as HTMLButtonElement;
+          target.style.opacity = "1";
+          target.style.transform = "scale(1.1)";
         }}
         onMouseLeave={(e) => {
-          e.target.style.opacity = "0.8";
-          e.target.style.transform = "scale(1)";
+          const target = e.target as HTMLButtonElement;
+          target.style.opacity = "0.8";
+          target.style.transform = "scale(1)";
         }}
       >
         ×
@@ -523,10 +616,21 @@ const MainCategoryBlock = ({ category, isSelected, onClick, onDragOver, onDragLe
 };
 
 // ----------- Comparison Pane ----------
-const ComparisonPane = ({ category, position, onClose, tree, onDelete, onRename, onAddChild, onMoveToRoot, onMoveToParent, onDropFromOtherPane }) => {
+const ComparisonPane: React.FC<ComparisonPaneProps> = ({ 
+  category, 
+  position, 
+  onClose, 
+  tree, 
+  onDelete, 
+  onRename, 
+  onAddChild, 
+  onMoveToRoot, 
+  onMoveToParent, 
+  onDropFromOtherPane 
+}) => {
   const [dragOver, setDragOver] = useState(false);
 
-  const handleDragOver = (e) => {
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     
@@ -534,7 +638,7 @@ const ComparisonPane = ({ category, position, onClose, tree, onDelete, onRename,
       const dragDataString = e.dataTransfer.getData("text/plain");
       if (!dragDataString) return;
       
-      const dragData = JSON.parse(dragDataString);
+      const dragData: DragData = JSON.parse(dragDataString);
       if (dragData.type === 'child') {
         e.dataTransfer.dropEffect = "move";
         setDragOver(true);
@@ -546,9 +650,9 @@ const ComparisonPane = ({ category, position, onClose, tree, onDelete, onRename,
     }
   };
 
-  const handleDragLeave = (e) => {
+  const handleDragLeave = (e: React.DragEvent) => {
     e.stopPropagation();
-    const rect = e.currentTarget.getBoundingClientRect();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
     
@@ -557,7 +661,7 @@ const ComparisonPane = ({ category, position, onClose, tree, onDelete, onRename,
     }
   };
 
-  const handleDrop = (e) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragOver(false);
@@ -566,7 +670,7 @@ const ComparisonPane = ({ category, position, onClose, tree, onDelete, onRename,
       const dragDataString = e.dataTransfer.getData("text/plain");
       if (!dragDataString) return;
       
-      const dragData = JSON.parse(dragDataString);
+      const dragData: DragData = JSON.parse(dragDataString);
       if (dragData.type === 'child' && dragData.id) {
         onDropFromOtherPane(dragData.id, category.id);
       }
@@ -630,12 +734,14 @@ const ComparisonPane = ({ category, position, onClose, tree, onDelete, onRename,
             gap: "4px"
           }}
           onMouseEnter={(e) => {
-            e.target.style.background = "rgba(255,255,255,0.3)";
-            e.target.style.transform = "scale(1.05)";
+            const target = e.target as HTMLButtonElement;
+            target.style.background = "rgba(255,255,255,0.3)";
+            target.style.transform = "scale(1.05)";
           }}
           onMouseLeave={(e) => {
-            e.target.style.background = "rgba(255,255,255,0.2)";
-            e.target.style.transform = "scale(1)";
+            const target = e.target as HTMLButtonElement;
+            target.style.background = "rgba(255,255,255,0.2)";
+            target.style.transform = "scale(1)";
           }}
         >
           <span style={{ fontSize: "16px" }}>+</span>
@@ -725,7 +831,7 @@ const ComparisonPane = ({ category, position, onClose, tree, onDelete, onRename,
 };
 
 // ----------- Recursive Tree ----------
-const TreeRecursive = ({
+const TreeRecursive: React.FC<TreeRecursiveProps> = ({
   nodes,
   onDelete,
   onRename,
@@ -736,7 +842,7 @@ const TreeRecursive = ({
 }) => {
   return (
     <div onDragStart={(e) => e.stopPropagation()}>
-      {nodes.map((node) => (
+      {nodes.map((node: Industry) => (
         <DraggableBlock
           key={node.id}
           node={node}
@@ -765,14 +871,14 @@ const TreeRecursive = ({
 };
 
 // ----------- Main Industry Tree ----------
-const IndustryTree = ({ selectedIndustryId }) => {
-  const [industries, setIndustries] = useState([]);
-  const [tree, setTree] = useState([]);
-  const [mainCategories, setMainCategories] = useState([]);
-  const [selectedCategories, setSelectedCategories] = useState([]);
+const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
+  const [industries, setIndustries] = useState<Industry[]>([]);
+  const [tree, setTree] = useState<Industry[]>([]);
+  const [mainCategories, setMainCategories] = useState<Industry[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<Industry[]>([]);
   const [loading, setLoading] = useState(false);
-  const [mainCategoriesOrder, setMainCategoriesOrder] = useState([]);
-  const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [mainCategoriesOrder, setMainCategoriesOrder] = useState<number[]>([]);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   useEffect(() => {
     loadIndustries();
@@ -783,7 +889,7 @@ const IndustryTree = ({ selectedIndustryId }) => {
     try {
       const response = await fetch("http://localhost:8000/industries/");
       if (!response.ok) throw new Error('Failed to fetch industries');
-      const data = await response.json();
+      const data: Industry[] = await response.json();
       setIndustries(data);
       const treeData = buildTree(data);
       setTree(treeData);
@@ -795,7 +901,7 @@ const IndustryTree = ({ selectedIndustryId }) => {
     } catch (error) {
       console.error("Failed to load industries:", error);
       // Enhanced mock data for better testing
-      const mockData = [
+      const mockData: Industry[] = [
         { id: 1, industry_name: "Sports", category: "main", parent_id: null },
         { id: 2, industry_name: "Beauty", category: "main", parent_id: null },
         { id: 3, industry_name: "Cricket", category: "sub", parent_id: 1 },
@@ -822,9 +928,9 @@ const IndustryTree = ({ selectedIndustryId }) => {
     setLoading(false);
   };
 
-  const buildTree = (list) => {
-    const map = {};
-    const roots = [];
+  const buildTree = (list: Industry[]): Industry[] => {
+    const map: { [key: number]: Industry } = {};
+    const roots: Industry[] = [];
 
     list.forEach((item) => {
       map[item.id] = { ...item, children: [] };
@@ -834,14 +940,14 @@ const IndustryTree = ({ selectedIndustryId }) => {
       if (item.parent_id === null) {
         roots.push(map[item.id]);
       } else if (map[item.parent_id]) {
-        map[item.parent_id].children.push(map[item.id]);
+        map[item.parent_id].children!.push(map[item.id]);
       }
     });
 
     return roots;
   };
 
-  const getCategoryByLevel = (level) => {
+  const getCategoryByLevel = (level: number): string => {
     if (level === 0) return "Main Industry";
     if (level === 1) return "sub";
     if (level === 2) return "sub-sub";
@@ -853,7 +959,7 @@ const IndustryTree = ({ selectedIndustryId }) => {
     return category;
   };
 
-  const findNodeById = (nodes, targetId) => {
+  const findNodeById = (nodes: Industry[], targetId: number): Industry | null => {
     for (let node of nodes) {
       if (node.id === targetId) return node;
       if (node.children && node.children.length > 0) {
@@ -864,7 +970,7 @@ const IndustryTree = ({ selectedIndustryId }) => {
     return null;
   };
 
-  const getNodeLevel = (nodes, targetId, currentLevel = 0) => {
+  const getNodeLevel = (nodes: Industry[], targetId: number, currentLevel: number = 0): number => {
     for (let node of nodes) {
       if (node.id === targetId) return currentLevel;
       if (node.children && node.children.length > 0) {
@@ -875,7 +981,7 @@ const IndustryTree = ({ selectedIndustryId }) => {
     return -1;
   };
 
-  const handleCategorySelect = (category) => {
+  const handleCategorySelect = (category: Industry) => {
     const isAlreadySelected = selectedCategories.some(sc => sc.id === category.id);
     
     if (isAlreadySelected) {
@@ -887,14 +993,14 @@ const IndustryTree = ({ selectedIndustryId }) => {
     }
   };
 
-  const handleMainCategoryDragOver = (e, index) => {
+  const handleMainCategoryDragOver = (e: React.DragEvent, index: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     setDragOverIndex(index);
   };
 
-  const handleMainCategoryDragLeave = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
+  const handleMainCategoryDragLeave = (e: React.DragEvent) => {
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const x = e.clientX;
     const y = e.clientY;
     
@@ -903,12 +1009,12 @@ const IndustryTree = ({ selectedIndustryId }) => {
     }
   };
 
-  const handleMainCategoryDrop = (e, dropIndex) => {
+  const handleMainCategoryDrop = (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault();
     setDragOverIndex(null);
     
     try {
-      const dragData = JSON.parse(e.dataTransfer.getData("text/plain"));
+      const dragData: DragData = JSON.parse(e.dataTransfer.getData("text/plain"));
       
       if (dragData.type === 'main') {
         // Reorder main categories (just visual, no database update)
@@ -928,12 +1034,12 @@ const IndustryTree = ({ selectedIndustryId }) => {
   };
 
   // Get the tree for a specific main category
-  const getTreeForCategory = (categoryId) => {
+  const getTreeForCategory = (categoryId: number): Industry[] => {
     const categoryNode = findNodeById(tree, categoryId);
     return categoryNode ? [categoryNode] : [];
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id: number) => {
     if (!window.confirm("Are you sure you want to delete this industry and all its children?")) {
       return;
     }
@@ -952,7 +1058,7 @@ const IndustryTree = ({ selectedIndustryId }) => {
     }
   };
 
-  const handleMainCategoryDelete = async (id) => {
+  const handleMainCategoryDelete = async (id: number) => {
     if (!window.confirm("Are you sure you want to delete this main category and all its subcategories?")) {
       return;
     }
@@ -971,7 +1077,7 @@ const IndustryTree = ({ selectedIndustryId }) => {
     }
   };
 
-  const handleRename = async (id, name) => {
+  const handleRename = async (id: number, name: string) => {
     try {
       const response = await fetch(`http://localhost:8000/industries/${id}`, {
         method: "PUT",
@@ -986,11 +1092,10 @@ const IndustryTree = ({ selectedIndustryId }) => {
     }
   };
 
-  const handleAddChild = async (parentId) => {
+  const handleAddChild = async (parentId: number) => {
     const name = prompt("Enter child industry name:");
     if (!name || !name.trim()) return;
     
-    const parentNode = findNodeById(tree, parentId);
     const parentLevel = getNodeLevel(tree, parentId);
     const childCategory = getCategoryByLevel(parentLevel + 1);
     
@@ -1012,7 +1117,7 @@ const IndustryTree = ({ selectedIndustryId }) => {
     }
   };
 
-  const handleMoveToRoot = async (id) => {
+  const handleMoveToRoot = async (id: number) => {
     try {
       const response = await fetch("http://localhost:8000/update-industry-parent", {
         method: "POST",
@@ -1030,11 +1135,11 @@ const IndustryTree = ({ selectedIndustryId }) => {
       await loadIndustries();
     } catch (error) {
       console.error("Move to root failed:", error);
-      alert(`Failed to move industry to root: ${error.message}`);
+      alert(`Failed to move industry to root: ${(error as Error).message}`);
     }
   };
 
-  const handleMoveToParent = async (childId, newParentId) => {
+  const handleMoveToParent = async (childId: number, newParentId: number) => {
     try {
       const newParentLevel = getNodeLevel(tree, newParentId);
       const newCategory = getCategoryByLevel(newParentLevel + 1);
@@ -1055,12 +1160,12 @@ const IndustryTree = ({ selectedIndustryId }) => {
       await loadIndustries();
     } catch (error) {
       console.error("Move to parent failed:", error);
-      alert(`Failed to move industry: ${error.message}`);
+      alert(`Failed to move industry: ${(error as Error).message}`);
     }
   };
 
   // Handle moving child from one main category to another
-  const handleDropFromOtherPane = async (childId, newMainCategoryId) => {
+  const handleDropFromOtherPane = async (childId: number, newMainCategoryId: number) => {
     if (!window.confirm("Move this item to another main category?")) {
       return;
     }
@@ -1084,7 +1189,7 @@ const IndustryTree = ({ selectedIndustryId }) => {
       await loadIndustries();
     } catch (error) {
       console.error("Move between categories failed:", error);
-      alert(`Failed to move industry between categories: ${error.message}`);
+      alert(`Failed to move industry between categories: ${(error as Error).message}`);
     }
   };
 
@@ -1112,7 +1217,7 @@ const IndustryTree = ({ selectedIndustryId }) => {
   // Order main categories according to the current order
   const orderedMainCategories = mainCategoriesOrder
     .map(id => mainCategories.find(cat => cat.id === id))
-    .filter(Boolean);
+    .filter((cat): cat is Industry => cat !== undefined);
 
   if (loading) {
     return (
@@ -1186,14 +1291,16 @@ const IndustryTree = ({ selectedIndustryId }) => {
             boxShadow: "0 2px 4px rgba(0,124,186,0.2)",
           }}
           onMouseEnter={(e) => {
-            e.target.style.background = "#0056b3";
-            e.target.style.transform = "translateY(-1px)";
-            e.target.style.boxShadow = "0 4px 8px rgba(0,124,186,0.3)";
+            const target = e.target as HTMLButtonElement;
+            target.style.background = "#0056b3";
+            target.style.transform = "translateY(-1px)";
+            target.style.boxShadow = "0 4px 8px rgba(0,124,186,0.3)";
           }}
           onMouseLeave={(e) => {
-            e.target.style.background = "#007cba";
-            e.target.style.transform = "translateY(0)";
-            e.target.style.boxShadow = "0 2px 4px rgba(0,124,186,0.2)";
+            const target = e.target as HTMLButtonElement;
+            target.style.background = "#007cba";
+            target.style.transform = "translateY(0)";
+            target.style.boxShadow = "0 2px 4px rgba(0,124,186,0.2)";
           }}
         >
           + Add Industry
