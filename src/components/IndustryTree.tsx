@@ -93,7 +93,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
     cursor: isDragging ? "grabbing" : "grab",
     boxShadow: isDragging ? "0 8px 25px rgba(0,0,0,0.2)" : dragOver ? "0 4px 15px rgba(0,124,186,0.2)" : "0 2px 4px rgba(0,0,0,0.1)",
     transition: isDragging ? "none" : "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
-    position: "relative" as const,
+    position: "relative",
     transform: isDragging ? "rotate(2deg) scale(1.02)" : "none",
     zIndex: isDragging ? 1000 : 1,
   };
@@ -131,7 +131,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
       level: level
     } as DragData));
     
-    const dragImage = e.currentTarget.cloneNode(true) as HTMLElement;
+    const dragImage = (e.currentTarget as HTMLElement).cloneNode(true) as HTMLElement;
     dragImage.style.transform = "rotate(5deg)";
     dragImage.style.opacity = "0.8";
     dragImage.style.background = "#e6f3ff";
@@ -591,7 +591,7 @@ const MainCategoryBlock: React.FC<MainCategoryBlockProps> = ({
         ×
       </button>
       
-      {isSelected && (
+      {isSelected && position && (
         <div style={{
           position: "absolute",
           top: "-8px",
