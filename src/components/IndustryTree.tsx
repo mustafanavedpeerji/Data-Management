@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import API_BASE_URL from '../config/api'; // Adjust path as needed
 
 // Type definitions
 interface Industry {
@@ -887,7 +888,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
   const loadIndustries = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8000/industries/");
+      const response = await fetch(`${API_BASE_URL}/industries/`);
       if (!response.ok) throw new Error('Failed to fetch industries');
       const data: Industry[] = await response.json();
       setIndustries(data);
@@ -1044,7 +1045,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       return;
     }
     try {
-      const response = await fetch(`http://localhost:8000/industries/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/industries/${id}`, {
         method: "DELETE"
       });
       if (!response.ok) throw new Error('Delete failed');
@@ -1063,7 +1064,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       return;
     }
     try {
-      const response = await fetch(`http://localhost:8000/industries/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/industries/${id}`, {
         method: "DELETE"
       });
       if (!response.ok) throw new Error('Delete failed');
@@ -1079,7 +1080,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
 
   const handleRename = async (id: number, name: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/industries/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/industries/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ industry_name: name }),
@@ -1100,7 +1101,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
     const childCategory = getCategoryByLevel(parentLevel + 1);
     
     try {
-      const response = await fetch("http://localhost:8000/industries/", {
+      const response = await fetch("${API_BASE_URL}/industries/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1119,7 +1120,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
 
   const handleMoveToRoot = async (id: number) => {
     try {
-      const response = await fetch("http://localhost:8000/update-industry-parent", {
+      const response = await fetch("${API_BASE_URL}/update-industry-parent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -1144,7 +1145,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       const newParentLevel = getNodeLevel(tree, newParentId);
       const newCategory = getCategoryByLevel(newParentLevel + 1);
       
-      const response = await fetch("http://localhost:8000/update-industry-parent", {
+      const response = await fetch("${API_BASE_URL}/update-industry-parent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -1173,7 +1174,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
     try {
       const newCategory = getCategoryByLevel(1); // First level under main category
       
-      const response = await fetch("http://localhost:8000/update-industry-parent", {
+      const response = await fetch("${API_BASE_URL}/update-industry-parent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -1197,7 +1198,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
     const name = prompt("Enter industry name:");
     if (!name || !name.trim()) return;
     try {
-      const response = await fetch("http://localhost:8000/industries/", {
+      const response = await fetch("${API_BASE_URL}/industries/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
