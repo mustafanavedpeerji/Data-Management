@@ -26,6 +26,7 @@ interface MainCategoryBlockProps {
   isSelected: boolean;
   onClick: (category: Industry) => void;
   onDragOver: (e: React.DragEvent) => void;
+  onRename: (id: number, name: string) => void;
   onDragLeave: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
   onDelete: (id: number) => void;
@@ -450,7 +451,7 @@ const MainCategoryBlock: React.FC<MainCategoryBlockProps> = ({
   const handleSave = () => {
     if (name.trim() && name !== category.industry_name) {
       // This would call rename function from parent
-      // onRename(category.id, name.trim());
+        onRename(category.id, name.trim());
     }
     setEditing(false);
   };
@@ -1391,6 +1392,7 @@ const handleRename = async (id: number, name: string) => {
                 onDragOver={(e) => handleMainCategoryDragOver(e, index)}
                 onDragLeave={handleMainCategoryDragLeave}
                 onDrop={(e) => handleMainCategoryDrop(e, index)}
+                onRename={handleRename} 
                 onDelete={handleMainCategoryDelete}
                 dragOver={dragOverIndex === index}
                 position={selectedCategories.findIndex(sc => sc.id === category.id) + 1 || null}
