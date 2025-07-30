@@ -1078,20 +1078,34 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
     }
   };
 
-  const handleRename = async (id: number, name: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/industries/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ industry_name: name }),
-      });
-      if (!response.ok) throw new Error('Rename failed');
-      await loadIndustries();
-    } catch (error) {
-      console.error("Rename failed:", error);
-      alert("Failed to rename industry. Please try again.");
+const handleRename = async (id: number, name: string) => {
+  console.log('🔍 Rename started:', { id, name });
+  
+  try {
+    const response = await fetch(`${API_BASE_URL}/industries/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ industry_name: name }),
+    });
+    
+    console.log('🔍 Rename response status:', response.status);
+    console.log('🔍 Rename response ok:', response.ok);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log('🔍 Error response:', errorText);
+      throw new Error('Rename failed');
     }
-  };
+    
+    console.log('🔍 Calling loadIndustries...');
+    await loadIndustries();
+    console.log('🔍 loadIndustries completed');
+    
+  } catch (error) {
+    console.error("Rename failed:", error);
+    alert("Failed to rename industry. Please try again.");
+  }
+};
 
   const handleAddChild = async (parentId: number) => {
     const name = prompt("Enter child industry name:");
