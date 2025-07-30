@@ -1101,7 +1101,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
     const childCategory = getCategoryByLevel(parentLevel + 1);
     
     try {
-      const response = await fetch("${API_BASE_URL}/industries/", {
+      const response = await fetch(`${API_BASE_URL}/industries/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -1120,7 +1120,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
 
   const handleMoveToRoot = async (id: number) => {
     try {
-      const response = await fetch("${API_BASE_URL}/update-industry-parent", {
+      const response = await fetch(`${API_BASE_URL}/update-industry-parent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -1145,7 +1145,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       const newParentLevel = getNodeLevel(tree, newParentId);
       const newCategory = getCategoryByLevel(newParentLevel + 1);
       
-      const response = await fetch("${API_BASE_URL}/update-industry-parent", {
+      const response = await fetch(`${API_BASE_URL}/update-industry-parent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -1174,7 +1174,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
     try {
       const newCategory = getCategoryByLevel(1); // First level under main category
       
-      const response = await fetch("${API_BASE_URL}/update-industry-parent", {
+      const response = await fetch(`${API_BASE_URL}/update-industry-parent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
@@ -1198,7 +1198,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
     const name = prompt("Enter industry name:");
     if (!name || !name.trim()) return;
     try {
-      const response = await fetch("${API_BASE_URL}/industries/", {
+      const response = await fetch(`${API_BASE_URL}/industries/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
