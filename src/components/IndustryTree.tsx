@@ -440,7 +440,8 @@ const MainCategoryBlock: React.FC<MainCategoryBlockProps> = ({
   onDragOver, 
   onDragLeave, 
   onDrop, 
-  onDelete, 
+  onDelete,
+  onRename, 
   dragOver, 
   position 
 }) => {
