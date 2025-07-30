@@ -1088,24 +1088,22 @@ const handleRename = async (id: number, name: string) => {
       body: JSON.stringify({ industry_name: name }),
     });
     
-    console.log('🔍 Rename response status:', response.status);
-    console.log('🔍 Rename response ok:', response.ok);
+    if (!response.ok) throw new Error('Rename failed');
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.log('🔍 Error response:', errorText);
-      throw new Error('Rename failed');
-    }
+    console.log('🔍 PUT successful (200), now reloading...');
     
-    console.log('🔍 Calling loadIndustries...');
+    // Force state refresh
     await loadIndustries();
-    console.log('🔍 loadIndustries completed');
+    
+    // Extra debug - check if state actually changed
+    console.log('🔍 Current industries state:', industries);
     
   } catch (error) {
     console.error("Rename failed:", error);
     alert("Failed to rename industry. Please try again.");
   }
 };
+
 
   const handleAddChild = async (parentId: number) => {
     const name = prompt("Enter child industry name:");
