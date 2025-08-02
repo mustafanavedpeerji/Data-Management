@@ -68,6 +68,321 @@ interface DragData {
   level?: number;
 }
 
+// Modal Components
+interface InputModalProps {
+  isOpen: boolean;
+  title: string;
+  placeholder: string;
+  onConfirm: (value: string) => void;
+  onCancel: () => void;
+}
+
+const InputModal: React.FC<InputModalProps> = ({ isOpen, title, placeholder, onConfirm, onCancel }) => {
+  const [value, setValue] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      setValue('');
+    }
+  }, [isOpen]);
+
+  const handleConfirm = () => {
+    if (value.trim()) {
+      onConfirm(value.trim());
+      setValue('');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleConfirm();
+    } else if (e.key === 'Escape') {
+      onCancel();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10000,
+      animation: 'fadeIn 0.2s ease-out'
+    }}>
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        padding: '30px',
+        minWidth: '400px',
+        maxWidth: '500px',
+        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+        animation: 'slideIn 0.3s ease-out'
+      }}>
+        <h3 style={{
+          margin: '0 0 20px 0',
+          color: '#333',
+          fontSize: '18px',
+          textAlign: 'center'
+        }}>
+          {title}
+        </h3>
+        
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={handleKeyPress}
+          placeholder={placeholder}
+          autoFocus
+          style={{
+            width: '100%',
+            padding: '12px 16px',
+            border: '2px solid #e0e0e0',
+            borderRadius: '8px',
+            fontSize: '14px',
+            outline: 'none',
+            marginBottom: '25px',
+            transition: 'border-color 0.2s ease',
+            boxSizing: 'border-box'
+          }}
+          onFocus={(e) => e.target.style.borderColor = '#007cba'}
+          onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+        />
+        
+        <div style={{
+          display: 'flex',
+          gap: '12px',
+          justifyContent: 'flex-end'
+        }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '10px 20px',
+              border: '2px solid #e0e0e0',
+              borderRadius: '6px',
+              backgroundColor: 'white',
+              color: '#666',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              const target = e.target as HTMLButtonElement;
+              target.style.backgroundColor = '#f5f5f5';
+              target.style.borderColor = '#ccc';
+            }}
+            onMouseLeave={(e) => {
+              const target = e.target as HTMLButtonElement;
+              target.style.backgroundColor = 'white';
+              target.style.borderColor = '#e0e0e0';
+            }}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={!value.trim()}
+            style={{
+              padding: '10px 20px',
+              border: 'none',
+              borderRadius: '6px',
+              backgroundColor: value.trim() ? '#007cba' : '#ccc',
+              color: 'white',
+              cursor: value.trim() ? 'pointer' : 'not-allowed',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              if (value.trim()) {
+                const target = e.target as HTMLButtonElement;
+                target.style.backgroundColor = '#0056b3';
+                target.style.transform = 'translateY(-1px)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (value.trim()) {
+                const target = e.target as HTMLButtonElement;
+                target.style.backgroundColor = '#007cba';
+                target.style.transform = 'translateY(0)';
+              }
+            }}
+          >
+            Confirm
+          </button>
+        </div>
+      </div>
+      
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        @keyframes slideIn {
+          from { 
+            opacity: 0;
+            transform: scale(0.9) translateY(-20px);
+          }
+          to { 
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+interface ConfirmModalProps {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  type?: 'danger' | 'warning' | 'info';
+}
+
+const ConfirmModal: React.FC<ConfirmModalProps> = ({ 
+  isOpen, 
+  title, 
+  message, 
+  confirmText = 'Yes', 
+  cancelText = 'No',
+  onConfirm, 
+  onCancel,
+  type = 'info'
+}) => {
+  const getColors = () => {
+    switch (type) {
+      case 'danger':
+        return { primary: '#dc3545', hover: '#c82333' };
+      case 'warning':
+        return { primary: '#ffc107', hover: '#e0a800' };
+      default:
+        return { primary: '#007cba', hover: '#0056b3' };
+    }
+  };
+
+  const colors = getColors();
+
+  if (!isOpen) return null;
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      zIndex: 10000,
+      animation: 'fadeIn 0.2s ease-out'
+    }}>
+      <div style={{
+        backgroundColor: 'white',
+        borderRadius: '12px',
+        padding: '30px',
+        minWidth: '400px',
+        maxWidth: '500px',
+        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
+        animation: 'slideIn 0.3s ease-out'
+      }}>
+        <h3 style={{
+          margin: '0 0 15px 0',
+          color: '#333',
+          fontSize: '18px',
+          textAlign: 'center'
+        }}>
+          {title}
+        </h3>
+        
+        <p style={{
+          margin: '0 0 25px 0',
+          color: '#666',
+          fontSize: '14px',
+          lineHeight: '1.5',
+          textAlign: 'center'
+        }}>
+          {message}
+        </p>
+        
+        <div style={{
+          display: 'flex',
+          gap: '12px',
+          justifyContent: 'center'
+        }}>
+          <button
+            onClick={onCancel}
+            style={{
+              padding: '10px 20px',
+              border: '2px solid #e0e0e0',
+              borderRadius: '6px',
+              backgroundColor: 'white',
+              color: '#666',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              const target = e.target as HTMLButtonElement;
+              target.style.backgroundColor = '#f5f5f5';
+              target.style.borderColor = '#ccc';
+            }}
+            onMouseLeave={(e) => {
+              const target = e.target as HTMLButtonElement;
+              target.style.backgroundColor = 'white';
+              target.style.borderColor = '#e0e0e0';
+            }}
+          >
+            {cancelText}
+          </button>
+          <button
+            onClick={onConfirm}
+            style={{
+              padding: '10px 20px',
+              border: 'none',
+              borderRadius: '6px',
+              backgroundColor: colors.primary,
+              color: 'white',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              const target = e.target as HTMLButtonElement;
+              target.style.backgroundColor = colors.hover;
+              target.style.transform = 'translateY(-1px)';
+            }}
+            onMouseLeave={(e) => {
+              const target = e.target as HTMLButtonElement;
+              target.style.backgroundColor = colors.primary;
+              target.style.transform = 'translateY(0)';
+            }}
+          >
+            {confirmText}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ----------- Draggable Block ----------
 const DraggableBlock: React.FC<DraggableBlockProps> = ({ 
   node, 
@@ -451,8 +766,7 @@ const MainCategoryBlock: React.FC<MainCategoryBlockProps> = ({
 
   const handleSave = () => {
     if (name.trim() && name !== category.industry_name) {
-      // This would call rename function from parent
-        onRename(category.id, name.trim());
+      onRename(category.id, name.trim());
     }
     setEditing(false);
   };
@@ -553,7 +867,6 @@ const MainCategoryBlock: React.FC<MainCategoryBlockProps> = ({
         </div>
       )}
       
-      {/* Delete button for main category */}
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -696,7 +1009,6 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {/* Pane Header */}
       <div style={{
         background: dragOver ? "#28a745" : "#007cba",
         color: "white",
@@ -714,7 +1026,6 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
           </div>
         </div>
         
-        {/* Add Child Button in Header */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -767,7 +1078,6 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
         </button>
       </div>
       
-      {/* Drop Zone Indicator */}
       {dragOver && (
         <div style={{
           background: "#f0fff0",
@@ -784,7 +1094,6 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
         </div>
       )}
       
-      {/* Pane Content */}
       <div style={{
         padding: "16px",
         maxHeight: "400px",
@@ -883,6 +1192,33 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
   const [mainCategoriesOrder, setMainCategoriesOrder] = useState<number[]>([]);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
+  // Modal states
+  const [inputModal, setInputModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    placeholder: string;
+    onConfirm: (value: string) => void;
+  }>({
+    isOpen: false,
+    title: '',
+    placeholder: '',
+    onConfirm: () => {}
+  });
+
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+    type?: 'danger' | 'warning' | 'info';
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    type: 'info'
+  });
+
   useEffect(() => {
     loadIndustries();
   }, [selectedIndustryId]);
@@ -897,36 +1233,12 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       const treeData = buildTree(data);
       setTree(treeData);
       
-      // Extract main categories
       const mains = data.filter(item => item.parent_id === null);
       setMainCategories(mains);
       setMainCategoriesOrder(mains.map(item => item.id));
     } catch (error) {
       console.error("Failed to load industries:", error);
-      // Enhanced mock data for better testing
-      const mockData: Industry[] = [
-        { id: 1, industry_name: "Sports", category: "main", parent_id: null },
-        { id: 2, industry_name: "Beauty", category: "main", parent_id: null },
-        { id: 3, industry_name: "Cricket", category: "sub", parent_id: 1 },
-        { id: 4, industry_name: "Football", category: "sub", parent_id: 1 },
-        { id: 5, industry_name: "Basketball", category: "sub", parent_id: 1 },
-        { id: 6, industry_name: "Rugby", category: "sub", parent_id: 1 },
-        { id: 7, industry_name: "Bat", category: "sub", parent_id: 3 },
-        { id: 8, industry_name: "Ball", category: "sub", parent_id: 3 },
-        { id: 9, industry_name: "Cosmetics", category: "main", parent_id: null },
-        { id: 10, industry_name: "Skincare", category: "sub", parent_id: 2 },
-        { id: 11, industry_name: "Gym", category: "main", parent_id: null },
-        { id: 12, industry_name: "Stadium", category: "main", parent_id: null },
-        { id: 13, industry_name: "Salon", category: "main", parent_id: null },
-      ];
-      setIndustries(mockData);
-      const treeData = buildTree(mockData);
-      setTree(treeData);
-      
-      // Extract main categories
-      const mains = mockData.filter(item => item.parent_id === null);
-      setMainCategories(mains);
-      setMainCategoriesOrder(mains.map(item => item.id));
+      alert("Failed to load industries. Please check your connection and try again.");
     }
     setLoading(false);
   };
@@ -988,10 +1300,8 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
     const isAlreadySelected = selectedCategories.some(sc => sc.id === category.id);
     
     if (isAlreadySelected) {
-      // Remove from selection
       setSelectedCategories(prev => prev.filter(sc => sc.id !== category.id));
     } else {
-      // Add to selection
       setSelectedCategories(prev => [...prev, category]);
     }
   };
@@ -1020,7 +1330,6 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       const dragData: DragData = JSON.parse(e.dataTransfer.getData("text/plain"));
       
       if (dragData.type === 'main') {
-        // Reorder main categories (just visual, no database update)
         const draggedId = dragData.id;
         const newOrder = [...mainCategoriesOrder];
         const draggedIndex = newOrder.indexOf(draggedId);
@@ -1036,122 +1345,132 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
     }
   };
 
-  // Get the tree for a specific main category
   const getTreeForCategory = (categoryId: number): Industry[] => {
     const categoryNode = findNodeById(tree, categoryId);
     return categoryNode ? [categoryNode] : [];
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this industry and all its children?")) {
-      return;
-    }
-    try {
-      const response = await fetch(`${API_BASE_URL}/industries/${id}`, {
-        method: "DELETE"
-      });
-      if (!response.ok) throw new Error('Delete failed');
-      await loadIndustries();
-      
-      // Remove from selected categories if it was a main category
-      setSelectedCategories(prev => prev.filter(sc => sc.id !== id));
-    } catch (error) {
-      console.error("Delete failed:", error);
-      alert("Failed to delete industry. Please try again.");
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Industry',
+      message: 'Are you sure you want to delete this industry and all its children? This action cannot be undone.',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/industries/${id}`, {
+            method: "DELETE"
+          });
+          if (!response.ok) throw new Error('Delete failed');
+          await loadIndustries();
+          setSelectedCategories(prev => prev.filter(sc => sc.id !== id));
+        } catch (error) {
+          console.error("Delete failed:", error);
+          alert("Failed to delete industry. Please try again.");
+        }
+        setConfirmModal({ ...confirmModal, isOpen: false });
+      }
+    });
   };
 
   const handleMainCategoryDelete = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this main category and all its subcategories?")) {
-      return;
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Main Category',
+      message: 'Are you sure you want to delete this main category and all its subcategories? This action cannot be undone.',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/industries/${id}`, {
+            method: "DELETE"
+          });
+          if (!response.ok) throw new Error('Delete failed');
+          await loadIndustries();
+          setSelectedCategories(prev => prev.filter(sc => sc.id !== id));
+        } catch (error) {
+          console.error("Delete failed:", error);
+          alert("Failed to delete main category. Please try again.");
+        }
+        setConfirmModal({ ...confirmModal, isOpen: false });
+      }
+    });
+  };
+
+  const handleRename = async (id: number, name: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/industries/${id}`, {
-        method: "DELETE"
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ industry_name: name }),
       });
-      if (!response.ok) throw new Error('Delete failed');
-      await loadIndustries();
       
-      // Remove from selected categories
-      setSelectedCategories(prev => prev.filter(sc => sc.id !== id));
+      if (!response.ok) throw new Error('Rename failed');
+      await loadIndustries();
     } catch (error) {
-      console.error("Delete failed:", error);
-      alert("Failed to delete main category. Please try again.");
+      console.error("Rename failed:", error);
+      alert("Failed to rename industry. Please try again.");
     }
   };
 
-const handleRename = async (id: number, name: string) => {
-  console.log('🔍 Rename started:', { id, name });
-  
-  try {
-    const response = await fetch(`${API_BASE_URL}/industries/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ industry_name: name }),
-    });
-    
-    if (!response.ok) throw new Error('Rename failed');
-    
-    console.log('🔍 PUT successful (200), now reloading...');
-    
-    // Force state refresh
-    await loadIndustries();
-    
-    // Extra debug - check if state actually changed
-    console.log('🔍 Current industries state:', industries);
-    
-  } catch (error) {
-    console.error("Rename failed:", error);
-    alert("Failed to rename industry. Please try again.");
-  }
-};
-
-
   const handleAddChild = async (parentId: number) => {
-    const name = prompt("Enter child industry name:");
-    if (!name || !name.trim()) return;
-    
     const parentLevel = getNodeLevel(tree, parentId);
     const childCategory = getCategoryByLevel(parentLevel + 1);
     
-    try {
-      const response = await fetch(`${API_BASE_URL}/industries/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          industry_name: name.trim(),
-          category: childCategory,
-          parent_id: parentId,
-        }),
-      });
-      if (!response.ok) throw new Error('Add child failed');
-      await loadIndustries();
-    } catch (error) {
-      console.error("Add child failed:", error);
-      alert("Failed to add child industry. Please try again.");
-    }
+    setInputModal({
+      isOpen: true,
+      title: 'Add Child Industry',
+      placeholder: 'Enter child industry name...',
+      onConfirm: async (name: string) => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/industries/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              industry_name: name,
+              category: childCategory,
+              parent_id: parentId,
+            }),
+          });
+          if (!response.ok) throw new Error('Add child failed');
+          await loadIndustries();
+        } catch (error) {
+          console.error("Add child failed:", error);
+          alert("Failed to add child industry. Please try again.");
+        }
+        setInputModal({ ...inputModal, isOpen: false });
+      }
+    });
   };
 
   const handleMoveToRoot = async (id: number) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/update-industry-parent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          id: id, 
-          new_parent_id: null,
-          new_category: "Main Industry"
-        }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Move to root failed');
+    setConfirmModal({
+      isOpen: true,
+      title: 'Move to Root Level',
+      message: 'Are you sure you want to move this industry to the root level as a main category?',
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/update-industry-parent`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              id: id, 
+              new_parent_id: null,
+              new_category: "Main Industry"
+            }),
+          });
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Move to root failed');
+          }
+          await loadIndustries();
+        } catch (error) {
+          console.error("Move to root failed:", error);
+          alert(`Failed to move industry to root: ${(error as Error).message}`);
+        }
+        setConfirmModal({ ...confirmModal, isOpen: false });
       }
-      await loadIndustries();
-    } catch (error) {
-      console.error("Move to root failed:", error);
-      alert(`Failed to move industry to root: ${(error as Error).message}`);
-    }
+    });
   };
 
   const handleMoveToParent = async (childId: number, newParentId: number) => {
@@ -1179,57 +1498,66 @@ const handleRename = async (id: number, name: string) => {
     }
   };
 
-  // Handle moving child from one main category to another
   const handleDropFromOtherPane = async (childId: number, newMainCategoryId: number) => {
-    if (!window.confirm("Move this item to another main category?")) {
-      return;
-    }
-    
-    try {
-      const newCategory = getCategoryByLevel(1); // First level under main category
-      
-      const response = await fetch(`${API_BASE_URL}/update-industry-parent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          id: childId, 
-          new_parent_id: newMainCategoryId,
-          new_category: newCategory
-        }),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Move between categories failed');
+    setConfirmModal({
+      isOpen: true,
+      title: 'Move Between Categories',
+      message: 'Are you sure you want to move this item to another main category?',
+      type: 'info',
+      onConfirm: async () => {
+        try {
+          const newCategory = getCategoryByLevel(1);
+          
+          const response = await fetch(`${API_BASE_URL}/update-industry-parent`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              id: childId, 
+              new_parent_id: newMainCategoryId,
+              new_category: newCategory
+            }),
+          });
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Move between categories failed');
+          }
+          await loadIndustries();
+        } catch (error) {
+          console.error("Move between categories failed:", error);
+          alert(`Failed to move industry between categories: ${(error as Error).message}`);
+        }
+        setConfirmModal({ ...confirmModal, isOpen: false });
       }
-      await loadIndustries();
-    } catch (error) {
-      console.error("Move between categories failed:", error);
-      alert(`Failed to move industry between categories: ${(error as Error).message}`);
-    }
+    });
   };
 
   const handleAddRoot = async () => {
-    const name = prompt("Enter industry name:");
-    if (!name || !name.trim()) return;
-    try {
-      const response = await fetch(`${API_BASE_URL}/industries/`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          industry_name: name.trim(),
-          category: "main",
-          parent_id: null,
-        }),
-      });
-      if (!response.ok) throw new Error('Add industry failed');
-      await loadIndustries();
-    } catch (error) {
-      console.error("Add industry failed:", error);
-      alert("Failed to add industry. Please try again.");
-    }
+    setInputModal({
+      isOpen: true,
+      title: 'Add New Industry',
+      placeholder: 'Enter industry name...',
+      onConfirm: async (name: string) => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/industries/`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              industry_name: name,
+              category: "main",
+              parent_id: null,
+            }),
+          });
+          if (!response.ok) throw new Error('Add industry failed');
+          await loadIndustries();
+        } catch (error) {
+          console.error("Add industry failed:", error);
+          alert("Failed to add industry. Please try again.");
+        }
+        setInputModal({ ...inputModal, isOpen: false });
+      }
+    });
   };
 
-  // Order main categories according to the current order
   const orderedMainCategories = mainCategoriesOrder
     .map(id => mainCategories.find(cat => cat.id === id))
     .filter((cat): cat is Industry => cat !== undefined);
@@ -1524,6 +1852,24 @@ const handleRename = async (id: number, name: string) => {
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <InputModal
+        isOpen={inputModal.isOpen}
+        title={inputModal.title}
+        placeholder={inputModal.placeholder}
+        onConfirm={inputModal.onConfirm}
+        onCancel={() => setInputModal({ ...inputModal, isOpen: false })}
+      />
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+      />
     </div>
   );
 };
