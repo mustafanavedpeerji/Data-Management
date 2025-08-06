@@ -28,6 +28,11 @@ type NavItem = {
 const navItems: NavItem[] = [
   {
   icon: <BoxCubeIcon />, // ya koi aur icon jo pasand ho
+  name: "Company",
+  path: "/company", // yeh route tumhare IndustryPage.tsx ke liye
+  },
+  {
+  icon: <BoxCubeIcon />, // ya koi aur icon jo pasand ho
   name: "Industry",
   path: "/industry", // yeh route tumhare IndustryPage.tsx ke liye
   },
