@@ -10,7 +10,7 @@ interface ImportMeta {
 }
 
 // Use environment variable for API base URL
-const API_BASE = (import.meta.env as ImportMetaEnv).VITE_API_BASE || 'http://localhost:8000/companies';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://magicfingers.com.pk/backend';
 
 // Define interface for company data
 interface Company {
