@@ -331,7 +331,7 @@ const CompanyTree: React.FC = () => {
   const fetchCompanies = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(`${API_BASE}/tree`);
+      const response = await fetch(`${API_BASE}/companies/tree`);
       if (!response.ok) {
         throw new Error(`Failed to fetch companies: ${response.statusText}`);
       }
@@ -405,7 +405,7 @@ const CompanyTree: React.FC = () => {
       console.log('Creating company with payload:', payload);
 
       let response;
-      let endpoint = `${API_BASE}`;
+      let endpoint = `${API_BASE}/companies`;
       
       try {
         response = await fetch(endpoint, {
@@ -418,7 +418,7 @@ const CompanyTree: React.FC = () => {
         });
       } catch (fetchError) {
         console.log(`Failed with ${endpoint}, trying alternative...`);
-        endpoint = `${API_BASE}/create`;
+        endpoint = `${API_BASE}/companies/create`;
         response = await fetch(endpoint, {
           method: 'POST',
           headers: { 
@@ -454,7 +454,7 @@ const CompanyTree: React.FC = () => {
   const handleUpdateCompany = useCallback(async () => {
     if (!validateForm() || !editingCompany) return;
     try {
-      const response = await fetch(`${API_BASE}/${editingCompany.record_id}`, {
+      const response = await fetch(`${API_BASE}/companies/${editingCompany.record_id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
@@ -483,7 +483,7 @@ const CompanyTree: React.FC = () => {
     if (!window.confirm('Are you sure? This will delete the company and all its children.')) return;
 
     try {
-      const response = await fetch(`${API_BASE}/${companyId}`, {
+      const response = await fetch(`${API_BASE}/companies/${companyId}`, {
         method: 'DELETE'
       });
 
