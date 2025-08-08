@@ -1397,18 +1397,67 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
   };
 
   const handleRename = async (id: number, name: string) => {
+    // Validate input
+    if (!name || !name.trim()) {
+      alert("Industry name cannot be empty");
+      return;
+    }
+
+    const trimmedName = name.trim();
+    if (trimmedName.length < 2) {
+      alert("Industry name must be at least 2 characters long");
+      return;
+    }
+
     try {
-      const response = await fetch(`${API_BASE_URL}/industries/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ industry_name: name }),
-      });
+      console.log(`Renaming industry ${id} to "${trimmedName}"`);
       
-      if (!response.ok) throw new Error('Rename failed');
+      // Try the standard endpoint first
+      let response = await fetch(`${API_BASE_URL}/industries/${id}`, {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({ industry_name: trimmedName }),
+      });
+
+      // If that fails, try alternative endpoint
+      if (!response.ok && response.status === 404) {
+        console.log("Trying alternative endpoint...");
+        response = await fetch(`${API_BASE_URL}/industries/update/${id}`, {
+          method: "PUT",
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({ industry_name: trimmedName }),
+        });
+      }
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Rename failed - Response:", response.status, errorText);
+        
+        let errorMessage = `Failed to rename industry (${response.status}): `;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage += errorData.detail || errorData.message || errorText;
+        } catch {
+          errorMessage += errorText || response.statusText || 'Unknown server error';
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      console.log("Rename successful:", result);
       await loadIndustries();
+      
     } catch (error) {
       console.error("Rename failed:", error);
-      alert("Failed to rename industry. Please try again.");
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      alert(`Failed to rename industry: ${errorMessage}`);
     }
   };
 
