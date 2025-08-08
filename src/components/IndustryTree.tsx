@@ -1450,7 +1450,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       type: 'warning',
       onConfirm: async () => {
         try {
-          const response = await fetch(`${API_BASE_URL}/update-industry-parent`, {
+          const response = await fetch(`${API_BASE_URL}/industries/update-parent`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
@@ -1508,7 +1508,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
         try {
           const newCategory = getCategoryByLevel(1);
           
-          const response = await fetch(`${API_BASE_URL}/update-industry-parent`, {
+          const response = await fetch(`${API_BASE_URL}/industries/update-parent`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 

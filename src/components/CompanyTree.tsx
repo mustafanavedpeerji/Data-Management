@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo, Component, ReactNode, useCallback } from 'react';
+import React, { useState, useEffect, memo, Component, ReactNode, useCallback, useRef } from 'react';
 
 // Declare import.meta.env for Vite
 interface ImportMetaEnv {
@@ -326,6 +326,31 @@ const CompanyTree: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [selectedParent, setSelectedParent] = useState<Company | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormState);
+  
+  // SCROLL POSITION PRESERVATION - YE NAYE REFS HAIN
+  const scrollPositionRef = useRef<number>(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const preserveScrollRef = useRef<boolean>(false);
+
+  // SCROLL POSITION SAVE KARNE KE LIYE
+  const saveScrollPosition = useCallback(() => {
+    scrollPositionRef.current = window.pageYOffset || document.documentElement.scrollTop;
+    preserveScrollRef.current = true;
+  }, []);
+
+  // SCROLL POSITION RESTORE KARNE KE LIYE
+  const restoreScrollPosition = useCallback(() => {
+    if (preserveScrollRef.current) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        window.scrollTo({
+          top: scrollPositionRef.current,
+          behavior: 'auto'
+        });
+        preserveScrollRef.current = false;
+      }, 50);
+    }
+  }, []);
 
   // Fetch company tree
   const fetchCompanies = useCallback(async () => {
@@ -339,6 +364,10 @@ const CompanyTree: React.FC = () => {
       console.log('API Response:', data);
       setCompanies(data || []);
       setError('');
+      
+      // SCROLL POSITION RESTORE KARNE KE LIYE
+      restoreScrollPosition();
+      
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(`Failed to load companies: ${errorMessage}. Please try again.`);
@@ -346,7 +375,7 @@ const CompanyTree: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [restoreScrollPosition]);
 
   useEffect(() => {
     fetchCompanies();
@@ -396,6 +425,10 @@ const CompanyTree: React.FC = () => {
   // Create new company
   const handleCreateCompany = useCallback(async () => {
     if (!validateForm()) return;
+    
+    // SCROLL POSITION SAVE KARNE KE LIYE
+    saveScrollPosition();
+    
     try {
       const payload = { ...formData };
       if (selectedParent) {
@@ -447,12 +480,17 @@ const CompanyTree: React.FC = () => {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(`Failed to create company: ${errorMessage}`);
       console.error('Create company error:', err);
+      preserveScrollRef.current = false; // Reset on error
     }
-  }, [formData, selectedParent, validateForm, fetchCompanies]);
+  }, [formData, selectedParent, validateForm, fetchCompanies, saveScrollPosition]);
 
   // Update company
   const handleUpdateCompany = useCallback(async () => {
     if (!validateForm() || !editingCompany) return;
+    
+    // SCROLL POSITION SAVE KARNE KE LIYE
+    saveScrollPosition();
+    
     try {
       const response = await fetch(`${API_BASE}/companies/${editingCompany.record_id}`, {
         method: 'PUT',
@@ -475,12 +513,16 @@ const CompanyTree: React.FC = () => {
     } catch (err) {
       setError(`Failed to update company: ${err instanceof Error ? err.message : 'Unknown error'}`);
       console.error(err);
+      preserveScrollRef.current = false; // Reset on error
     }
-  }, [formData, editingCompany, validateForm, fetchCompanies]);
+  }, [formData, editingCompany, validateForm, fetchCompanies, saveScrollPosition]);
 
   // Delete company
   const handleDeleteCompany = useCallback(async (companyId: string) => {
     if (!window.confirm('Are you sure? This will delete the company and all its children.')) return;
+
+    // SCROLL POSITION SAVE KARNE KE LIYE
+    saveScrollPosition();
 
     try {
       const response = await fetch(`${API_BASE}/companies/${companyId}`, {
@@ -496,8 +538,9 @@ const CompanyTree: React.FC = () => {
     } catch (err) {
       setError(`Failed to delete company: ${err instanceof Error ? err.message : 'Unknown error'}`);
       console.error(err);
+      preserveScrollRef.current = false; // Reset on error
     }
-  }, [fetchCompanies]);
+  }, [fetchCompanies, saveScrollPosition]);
 
   // Start editing a company
   const startEdit = useCallback((company: Company) => {
@@ -534,6 +577,8 @@ const CompanyTree: React.FC = () => {
     setFormData(initialFormState);
     setSelectedParent(null);
     setError('');
+    // Cancel pe scroll position preserve nahi karna
+    preserveScrollRef.current = false;
   }, []);
 
   // Filter companies based on search term
@@ -662,7 +707,7 @@ const CompanyTree: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <div className="max-w-6xl mx-auto p-6">
+      <div ref={containerRef} className="max-w-6xl mx-auto p-6">
         <div className="mb-6">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold text-gray-900">Company Management</h1>
