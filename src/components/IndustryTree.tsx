@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import API_BASE_URL from '../config/api'; // Adjust path as needed
+import apiClient from '../config/apiClient';
 
 // Type definitions
 interface Industry {
@@ -1263,8 +1264,11 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
   const loadIndustries = React.useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/industries/`);
-      if (!response.ok) throw new Error('Failed to fetch industries');
+      const response = await apiClient.get('/industries/');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch industries: ${response.status} ${errorText}`);
+      }
       const data: Industry[] = await response.json();
       setIndustries(data);
       const treeData = buildTree(data);
@@ -1279,7 +1283,8 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       
     } catch (error) {
       console.error("Failed to load industries:", error);
-      alert("Failed to load industries. Please check your connection and try again.");
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to load industries: ${errorMessage}\nPlease refresh the page and try again.`);
     }
     setLoading(false);
   }, [restoreScrollPosition]);
@@ -1400,15 +1405,17 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       onConfirm: async () => {
         saveScrollPosition();
         try {
-          const response = await fetch(`${API_BASE_URL}/industries/${id}`, {
-            method: "DELETE"
-          });
-          if (!response.ok) throw new Error('Delete failed');
+          const response = await apiClient.delete(`/industries/${id}`);
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Delete failed: ${response.status} ${errorText}`);
+          }
           await loadIndustries();
           setSelectedCategories(prev => prev.filter(sc => sc.id !== id));
         } catch (error) {
           console.error("Delete failed:", error);
-          alert("Failed to delete industry. Please try again.");
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          alert(`Failed to delete industry: ${errorMessage}`);
           preserveScrollRef.current = false;
         }
         setConfirmModal({ ...confirmModal, isOpen: false });
@@ -1425,15 +1432,17 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       onConfirm: async () => {
         saveScrollPosition();
         try {
-          const response = await fetch(`${API_BASE_URL}/industries/${id}`, {
-            method: "DELETE"
-          });
-          if (!response.ok) throw new Error('Delete failed');
+          const response = await apiClient.delete(`/industries/${id}`);
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Delete failed: ${response.status} ${errorText}`);
+          }
           await loadIndustries();
           setSelectedCategories(prev => prev.filter(sc => sc.id !== id));
         } catch (error) {
           console.error("Delete failed:", error);
-          alert("Failed to delete main category. Please try again.");
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          alert(`Failed to delete main category: ${errorMessage}`);
           preserveScrollRef.current = false;
         }
         setConfirmModal({ ...confirmModal, isOpen: false });
@@ -1468,26 +1477,12 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       console.log(`Renaming industry ${id} to "${trimmedName}"`);
       
       // Try the standard endpoint first
-      let response = await fetch(`${API_BASE_URL}/industries/${id}`, {
-        method: "PUT",
-        headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({ industry_name: trimmedName }),
-      });
+      let response = await apiClient.put(`/industries/${id}`, { industry_name: trimmedName });
 
       // If that fails, try alternative endpoint
       if (!response.ok && response.status === 404) {
         console.log("Trying alternative endpoint...");
-        response = await fetch(`${API_BASE_URL}/industries/update/${id}`, {
-          method: "PUT",
-          headers: { 
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify({ industry_name: trimmedName }),
-        });
+        response = await apiClient.put(`/industries/update/${id}`, { industry_name: trimmedName });
       }
       
       if (!response.ok) {
@@ -1530,20 +1525,20 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       onConfirm: async (name: string) => {
         saveScrollPosition();
         try {
-          const response = await fetch(`${API_BASE_URL}/industries/`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              industry_name: name,
-              category: childCategory,
-              parent_id: parentId,
-            }),
+          const response = await apiClient.post('/industries/', {
+            industry_name: name,
+            category: childCategory,
+            parent_id: parentId,
           });
-          if (!response.ok) throw new Error('Add child failed');
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Add child failed: ${response.status} ${errorText}`);
+          }
           await loadIndustries();
         } catch (error) {
           console.error("Add child failed:", error);
-          alert("Failed to add child industry. Please try again.");
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          alert(`Failed to add child industry: ${errorMessage}`);
           preserveScrollRef.current = false;
         }
         setInputModal({ ...inputModal, isOpen: false });
@@ -1560,13 +1555,9 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       onConfirm: async () => {
         saveScrollPosition();
         try {
-          const response = await fetch(`${API_BASE_URL}/industries/update-parent`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-              id: id, 
-              new_parent_id: null
-            }),
+          const response = await apiClient.post('/industries/update-parent', { 
+            id: id, 
+            new_parent_id: null
           });
           if (!response.ok) {
             const errorData = await response.json();
@@ -1575,7 +1566,8 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
           await loadIndustries();
         } catch (error) {
           console.error("Move to root failed:", error);
-          alert(`Failed to move industry to root: ${(error as Error).message}`);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          alert(`Failed to move industry to root: ${errorMessage}`);
           preserveScrollRef.current = false;
         }
         setConfirmModal({ ...confirmModal, isOpen: false });
@@ -1586,13 +1578,9 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
   const handleMoveToParent = async (childId: number, newParentId: number) => {
     saveScrollPosition();
     try {
-      const response = await fetch(`${API_BASE_URL}/industries/update-parent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          id: childId, 
-          new_parent_id: newParentId
-        }),
+      const response = await apiClient.post('/industries/update-parent', { 
+        id: childId, 
+        new_parent_id: newParentId
       });
       if (!response.ok) {
         const errorData = await response.json();
@@ -1601,7 +1589,8 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       await loadIndustries();
     } catch (error) {
       console.error("Move to parent failed:", error);
-      alert(`Failed to move industry: ${(error as Error).message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to move industry: ${errorMessage}`);
       preserveScrollRef.current = false;
     }
   };
@@ -1615,13 +1604,9 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       onConfirm: async () => {
         saveScrollPosition();
         try {
-          const response = await fetch(`${API_BASE_URL}/industries/update-parent`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ 
-              id: childId, 
-              new_parent_id: newMainCategoryId
-            }),
+          const response = await apiClient.post('/industries/update-parent', { 
+            id: childId, 
+            new_parent_id: newMainCategoryId
           });
           if (!response.ok) {
             const errorData = await response.json();
@@ -1630,7 +1615,8 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
           await loadIndustries();
         } catch (error) {
           console.error("Move between categories failed:", error);
-          alert(`Failed to move industry between categories: ${(error as Error).message}`);
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          alert(`Failed to move industry between categories: ${errorMessage}`);
           preserveScrollRef.current = false;
         }
         setConfirmModal({ ...confirmModal, isOpen: false });
@@ -1646,20 +1632,20 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       onConfirm: async (name: string) => {
         saveScrollPosition();
         try {
-          const response = await fetch(`${API_BASE_URL}/industries/`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              industry_name: name,
-              category: "main",
-              parent_id: null,
-            }),
+          const response = await apiClient.post('/industries/', {
+            industry_name: name,
+            category: "main",
+            parent_id: null,
           });
-          if (!response.ok) throw new Error('Add industry failed');
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Add industry failed: ${response.status} ${errorText}`);
+          }
           await loadIndustries();
         } catch (error) {
           console.error("Add industry failed:", error);
-          alert("Failed to add industry. Please try again.");
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          alert(`Failed to add industry: ${errorMessage}`);
           preserveScrollRef.current = false;
         }
         setInputModal({ ...inputModal, isOpen: false });
