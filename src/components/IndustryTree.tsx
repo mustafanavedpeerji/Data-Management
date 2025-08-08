@@ -1455,8 +1455,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
               id: id, 
-              new_parent_id: null,
-              new_category: "Main Industry"
+              new_parent_id: null
             }),
           });
           if (!response.ok) {
@@ -1475,16 +1474,12 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
 
   const handleMoveToParent = async (childId: number, newParentId: number) => {
     try {
-      const newParentLevel = getNodeLevel(tree, newParentId);
-      const newCategory = getCategoryByLevel(newParentLevel + 1);
-      
-      const response = await fetch(`${API_BASE_URL}/update-industry-parent`, {
+      const response = await fetch(`${API_BASE_URL}/industries/update-parent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           id: childId, 
-          new_parent_id: newParentId,
-          new_category: newCategory
+          new_parent_id: newParentId
         }),
       });
       if (!response.ok) {
@@ -1506,15 +1501,12 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       type: 'info',
       onConfirm: async () => {
         try {
-          const newCategory = getCategoryByLevel(1);
-          
           const response = await fetch(`${API_BASE_URL}/industries/update-parent`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
               id: childId, 
-              new_parent_id: newMainCategoryId,
-              new_category: newCategory
+              new_parent_id: newMainCategoryId
             }),
           });
           if (!response.ok) {
