@@ -46,6 +46,7 @@ interface ComparisonPaneProps {
   onMoveToRoot: (id: number) => void;
   onMoveToParent: (childId: number, newParentId: number) => void;
   onDropFromOtherPane: (childId: number, newMainCategoryId: number) => void;
+  paneScrollRef: React.MutableRefObject<Map<number, HTMLDivElement>>;
 }
 
 interface TreeRecursiveProps {
@@ -943,7 +944,8 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
   onAddChild, 
   onMoveToRoot, 
   onMoveToParent, 
-  onDropFromOtherPane 
+  onDropFromOtherPane,
+  paneScrollRef
 }) => {
   const [dragOver, setDragOver] = useState(false);
 
@@ -1095,11 +1097,17 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
         </div>
       )}
       
-      <div style={{
-        padding: "16px",
-        maxHeight: "400px",
-        overflowY: "auto"
-      }}>
+      <div 
+        ref={(el) => {
+          if (el) {
+            paneScrollRef.current.set(category.id, el);
+          }
+        }}
+        style={{
+          padding: "16px",
+          maxHeight: "400px",
+          overflowY: "auto"
+        }}>
         {tree.length > 0 && tree[0].children && tree[0].children.length > 0 ? (
           <TreeRecursive
             nodes={tree[0].children}
@@ -1198,14 +1206,30 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const preserveScrollRef = React.useRef<boolean>(false);
   const operationInProgressRef = React.useRef<boolean>(false);
+  
+  // COMPARISON PANE SCROLL PRESERVATION
+  const paneScrollPositions = React.useRef<Map<number, number>>(new Map());
+  const paneScrollRefs = React.useRef<Map<number, HTMLDivElement>>(new Map());
 
-  // SCROLL POSITION SAVE FUNCTION
-  const saveScrollPosition = React.useCallback(() => {
+  // SCROLL POSITION SAVE FUNCTIONS
+  const savePaneScrollPositions = React.useCallback(() => {
     scrollPositionRef.current = window.pageYOffset || document.documentElement.scrollTop;
     preserveScrollRef.current = true;
   }, []);
 
-  // SCROLL POSITION RESTORE FUNCTION
+  const savePaneScrollPositions = React.useCallback(() => {
+    // Save main page scroll
+    savePaneScrollPositions();
+    
+    // Save all comparison pane scroll positions
+    paneScrollRefs.current.forEach((element, categoryId) => {
+      if (element) {
+        paneScrollPositions.current.set(categoryId, element.scrollTop);
+      }
+    });
+  }, [savePaneScrollPositions]);
+
+  // SCROLL POSITION RESTORE FUNCTIONS
   const restoreScrollPosition = React.useCallback(() => {
     if (preserveScrollRef.current) {
       // Small delay to ensure DOM is updated
@@ -1229,6 +1253,21 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       }, 200);
     }
   }, []);
+
+  const restorePaneScrollPositions = React.useCallback(() => {
+    // Restore main page scroll
+    restoreScrollPosition();
+    
+    // Restore comparison pane scroll positions
+    setTimeout(() => {
+      paneScrollPositions.current.forEach((scrollTop, categoryId) => {
+        const element = paneScrollRefs.current.get(categoryId);
+        if (element && scrollTop > 0) {
+          element.scrollTop = scrollTop;
+        }
+      });
+    }, 100);
+  }, [restoreScrollPosition]);
 
   // Modal states
   const [inputModal, setInputModal] = useState<{
@@ -1279,7 +1318,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       setMainCategoriesOrder(mains.map(item => item.id));
 
       // SCROLL POSITION RESTORE
-      restoreScrollPosition();
+      restorePaneScrollPositions();
       
     } catch (error) {
       console.error("Failed to load industries:", error);
@@ -1403,7 +1442,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       message: 'Are you sure you want to delete this industry and all its children? This action cannot be undone.',
       type: 'danger',
       onConfirm: async () => {
-        saveScrollPosition();
+        savePaneScrollPositions();
         try {
           const response = await apiClient.delete(`/industries/${id}`);
           if (!response.ok) {
@@ -1430,7 +1469,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       message: 'Are you sure you want to delete this main category and all its subcategories? This action cannot be undone.',
       type: 'danger',
       onConfirm: async () => {
-        saveScrollPosition();
+        savePaneScrollPositions();
         try {
           const response = await apiClient.delete(`/industries/${id}`);
           if (!response.ok) {
@@ -1471,7 +1510,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
 
     // SAVE SCROLL POSITION
     operationInProgressRef.current = true;
-    saveScrollPosition();
+    savePaneScrollPositions();
 
     try {
       console.log(`Renaming industry ${id} to "${trimmedName}"`);
@@ -1523,7 +1562,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       title: 'Add Child Industry',
       placeholder: 'Enter child industry name...',
       onConfirm: async (name: string) => {
-        saveScrollPosition();
+        savePaneScrollPositions();
         try {
           const response = await apiClient.post('/industries/', {
             industry_name: name,
@@ -1553,7 +1592,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       message: 'Are you sure you want to move this industry to the root level as a main category?',
       type: 'warning',
       onConfirm: async () => {
-        saveScrollPosition();
+        savePaneScrollPositions();
         try {
           const response = await apiClient.post('/industries/update-parent', { 
             id: id, 
@@ -1576,7 +1615,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
   };
 
   const handleMoveToParent = async (childId: number, newParentId: number) => {
-    saveScrollPosition();
+    savePaneScrollPositions();
     try {
       const response = await apiClient.post('/industries/update-parent', { 
         id: childId, 
@@ -1602,7 +1641,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       message: 'Are you sure you want to move this item to another main category?',
       type: 'info',
       onConfirm: async () => {
-        saveScrollPosition();
+        savePaneScrollPositions();
         try {
           const response = await apiClient.post('/industries/update-parent', { 
             id: childId, 
@@ -1630,7 +1669,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       title: 'Add New Industry',
       placeholder: 'Enter industry name...',
       onConfirm: async (name: string) => {
-        saveScrollPosition();
+        savePaneScrollPositions();
         try {
           const response = await apiClient.post('/industries/', {
             industry_name: name,
@@ -1857,7 +1896,12 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
               </span>
             </h3>
             <button
-              onClick={() => setSelectedCategories([])}
+              onClick={() => {
+                // Clear all scroll refs when clearing all panes
+                paneScrollRefs.current.clear();
+                paneScrollPositions.current.clear();
+                setSelectedCategories([]);
+              }}
               style={{
                 background: "#6c757d",
                 color: "white",
@@ -1890,9 +1934,14 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
                   key={category.id}
                   category={category}
                   position={index + 1}
-                  onClose={() => setSelectedCategories(prev => 
-                    prev.filter(sc => sc.id !== category.id)
-                  )}
+                  onClose={() => {
+                    // Clean up scroll ref for this pane
+                    paneScrollRefs.current.delete(category.id);
+                    paneScrollPositions.current.delete(category.id);
+                    setSelectedCategories(prev => 
+                      prev.filter(sc => sc.id !== category.id)
+                    );
+                  }}
                   tree={categoryTree}
                   onDelete={handleDelete}
                   onRename={handleRename}
@@ -1900,6 +1949,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
                   onMoveToRoot={handleMoveToRoot}
                   onMoveToParent={handleMoveToParent}
                   onDropFromOtherPane={handleDropFromOtherPane}
+                  paneScrollRef={paneScrollRefs}
                 />
               );
             })}
