@@ -1212,22 +1212,23 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
   const paneScrollRefs = React.useRef<Map<number, HTMLDivElement>>(new Map());
 
   // SCROLL POSITION SAVE FUNCTIONS
-  const savePaneScrollPositions = React.useCallback(() => {
+  const saveScrollPosition = React.useCallback(() => {
     scrollPositionRef.current = window.pageYOffset || document.documentElement.scrollTop;
     preserveScrollRef.current = true;
   }, []);
 
-  const savePaneScrollPositions = React.useCallback(() => {
+  const saveAllScrollPositions = React.useCallback(() => {
     // Save main page scroll
-    savePaneScrollPositions();
+    saveScrollPosition();
     
     // Save all comparison pane scroll positions
     paneScrollRefs.current.forEach((element, categoryId) => {
       if (element) {
         paneScrollPositions.current.set(categoryId, element.scrollTop);
+        console.log(`Saved scroll position for pane ${categoryId}: ${element.scrollTop}`);
       }
     });
-  }, [savePaneScrollPositions]);
+  }, [saveScrollPosition]);
 
   // SCROLL POSITION RESTORE FUNCTIONS
   const restoreScrollPosition = React.useCallback(() => {
@@ -1254,7 +1255,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
     }
   }, []);
 
-  const restorePaneScrollPositions = React.useCallback(() => {
+  const restoreAllScrollPositions = React.useCallback(() => {
     // Restore main page scroll
     restoreScrollPosition();
     
@@ -1263,10 +1264,22 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       paneScrollPositions.current.forEach((scrollTop, categoryId) => {
         const element = paneScrollRefs.current.get(categoryId);
         if (element && scrollTop > 0) {
+          console.log(`Restoring scroll position for pane ${categoryId}: ${scrollTop}`);
           element.scrollTop = scrollTop;
         }
       });
     }, 100);
+    
+    // Backup restore for panes
+    setTimeout(() => {
+      paneScrollPositions.current.forEach((scrollTop, categoryId) => {
+        const element = paneScrollRefs.current.get(categoryId);
+        if (element && scrollTop > 0 && element.scrollTop !== scrollTop) {
+          console.log(`Backup restore for pane ${categoryId}: ${scrollTop}`);
+          element.scrollTop = scrollTop;
+        }
+      });
+    }, 300);
   }, [restoreScrollPosition]);
 
   // Modal states
@@ -1318,7 +1331,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       setMainCategoriesOrder(mains.map(item => item.id));
 
       // SCROLL POSITION RESTORE
-      restorePaneScrollPositions();
+      restoreAllScrollPositions();
       
     } catch (error) {
       console.error("Failed to load industries:", error);
@@ -1326,7 +1339,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       alert(`Failed to load industries: ${errorMessage}\nPlease refresh the page and try again.`);
     }
     setLoading(false);
-  }, [restoreScrollPosition]);
+  }, [restoreAllScrollPositions]);
 
   const buildTree = (list: Industry[]): Industry[] => {
     const map: { [key: number]: Industry } = {};
@@ -1442,7 +1455,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       message: 'Are you sure you want to delete this industry and all its children? This action cannot be undone.',
       type: 'danger',
       onConfirm: async () => {
-        savePaneScrollPositions();
+        saveAllScrollPositions();
         try {
           const response = await apiClient.delete(`/industries/${id}`);
           if (!response.ok) {
@@ -1469,7 +1482,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       message: 'Are you sure you want to delete this main category and all its subcategories? This action cannot be undone.',
       type: 'danger',
       onConfirm: async () => {
-        savePaneScrollPositions();
+        saveAllScrollPositions();
         try {
           const response = await apiClient.delete(`/industries/${id}`);
           if (!response.ok) {
@@ -1510,7 +1523,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
 
     // SAVE SCROLL POSITION
     operationInProgressRef.current = true;
-    savePaneScrollPositions();
+    saveAllScrollPositions();
 
     try {
       console.log(`Renaming industry ${id} to "${trimmedName}"`);
@@ -1562,7 +1575,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       title: 'Add Child Industry',
       placeholder: 'Enter child industry name...',
       onConfirm: async (name: string) => {
-        savePaneScrollPositions();
+        saveAllScrollPositions();
         try {
           const response = await apiClient.post('/industries/', {
             industry_name: name,
@@ -1592,7 +1605,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       message: 'Are you sure you want to move this industry to the root level as a main category?',
       type: 'warning',
       onConfirm: async () => {
-        savePaneScrollPositions();
+        saveAllScrollPositions();
         try {
           const response = await apiClient.post('/industries/update-parent', { 
             id: id, 
@@ -1615,7 +1628,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
   };
 
   const handleMoveToParent = async (childId: number, newParentId: number) => {
-    savePaneScrollPositions();
+    saveAllScrollPositions();
     try {
       const response = await apiClient.post('/industries/update-parent', { 
         id: childId, 
@@ -1641,7 +1654,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       message: 'Are you sure you want to move this item to another main category?',
       type: 'info',
       onConfirm: async () => {
-        savePaneScrollPositions();
+        saveAllScrollPositions();
         try {
           const response = await apiClient.post('/industries/update-parent', { 
             id: childId, 
@@ -1669,7 +1682,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       title: 'Add New Industry',
       placeholder: 'Enter industry name...',
       onConfirm: async (name: string) => {
-        savePaneScrollPositions();
+        saveAllScrollPositions();
         try {
           const response = await apiClient.post('/industries/', {
             industry_name: name,
