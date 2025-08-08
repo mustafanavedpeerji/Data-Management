@@ -1192,6 +1192,31 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
   const [mainCategoriesOrder, setMainCategoriesOrder] = useState<number[]>([]);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
+  // SCROLL POSITION PRESERVATION
+  const scrollPositionRef = React.useRef<number>(0);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const preserveScrollRef = React.useRef<boolean>(false);
+
+  // SCROLL POSITION SAVE FUNCTION
+  const saveScrollPosition = React.useCallback(() => {
+    scrollPositionRef.current = window.pageYOffset || document.documentElement.scrollTop;
+    preserveScrollRef.current = true;
+  }, []);
+
+  // SCROLL POSITION RESTORE FUNCTION
+  const restoreScrollPosition = React.useCallback(() => {
+    if (preserveScrollRef.current) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        window.scrollTo({
+          top: scrollPositionRef.current,
+          behavior: 'auto'
+        });
+        preserveScrollRef.current = false;
+      }, 50);
+    }
+  }, []);
+
   // Modal states
   const [inputModal, setInputModal] = useState<{
     isOpen: boolean;
@@ -1223,7 +1248,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
     loadIndustries();
   }, [selectedIndustryId]);
 
-  const loadIndustries = async () => {
+  const loadIndustries = React.useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`${API_BASE_URL}/industries/`);
@@ -1236,12 +1261,16 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       const mains = data.filter(item => item.parent_id === null);
       setMainCategories(mains);
       setMainCategoriesOrder(mains.map(item => item.id));
+
+      // SCROLL POSITION RESTORE
+      restoreScrollPosition();
+      
     } catch (error) {
       console.error("Failed to load industries:", error);
       alert("Failed to load industries. Please check your connection and try again.");
     }
     setLoading(false);
-  };
+  }, [restoreScrollPosition]);
 
   const buildTree = (list: Industry[]): Industry[] => {
     const map: { [key: number]: Industry } = {};
@@ -1357,6 +1386,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       message: 'Are you sure you want to delete this industry and all its children? This action cannot be undone.',
       type: 'danger',
       onConfirm: async () => {
+        saveScrollPosition();
         try {
           const response = await fetch(`${API_BASE_URL}/industries/${id}`, {
             method: "DELETE"
@@ -1367,6 +1397,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
         } catch (error) {
           console.error("Delete failed:", error);
           alert("Failed to delete industry. Please try again.");
+          preserveScrollRef.current = false;
         }
         setConfirmModal({ ...confirmModal, isOpen: false });
       }
@@ -1380,6 +1411,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       message: 'Are you sure you want to delete this main category and all its subcategories? This action cannot be undone.',
       type: 'danger',
       onConfirm: async () => {
+        saveScrollPosition();
         try {
           const response = await fetch(`${API_BASE_URL}/industries/${id}`, {
             method: "DELETE"
@@ -1390,6 +1422,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
         } catch (error) {
           console.error("Delete failed:", error);
           alert("Failed to delete main category. Please try again.");
+          preserveScrollRef.current = false;
         }
         setConfirmModal({ ...confirmModal, isOpen: false });
       }
@@ -1408,6 +1441,9 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       alert("Industry name must be at least 2 characters long");
       return;
     }
+
+    // SAVE SCROLL POSITION
+    saveScrollPosition();
 
     try {
       console.log(`Renaming industry ${id} to "${trimmedName}"`);
@@ -1458,6 +1494,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       console.error("Rename failed:", error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       alert(`Failed to rename industry: ${errorMessage}`);
+      preserveScrollRef.current = false; // Reset on error
     }
   };
 
@@ -1470,6 +1507,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       title: 'Add Child Industry',
       placeholder: 'Enter child industry name...',
       onConfirm: async (name: string) => {
+        saveScrollPosition();
         try {
           const response = await fetch(`${API_BASE_URL}/industries/`, {
             method: "POST",
@@ -1485,6 +1523,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
         } catch (error) {
           console.error("Add child failed:", error);
           alert("Failed to add child industry. Please try again.");
+          preserveScrollRef.current = false;
         }
         setInputModal({ ...inputModal, isOpen: false });
       }
@@ -1498,6 +1537,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       message: 'Are you sure you want to move this industry to the root level as a main category?',
       type: 'warning',
       onConfirm: async () => {
+        saveScrollPosition();
         try {
           const response = await fetch(`${API_BASE_URL}/industries/update-parent`, {
             method: "POST",
@@ -1515,6 +1555,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
         } catch (error) {
           console.error("Move to root failed:", error);
           alert(`Failed to move industry to root: ${(error as Error).message}`);
+          preserveScrollRef.current = false;
         }
         setConfirmModal({ ...confirmModal, isOpen: false });
       }
@@ -1522,6 +1563,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
   };
 
   const handleMoveToParent = async (childId: number, newParentId: number) => {
+    saveScrollPosition();
     try {
       const response = await fetch(`${API_BASE_URL}/industries/update-parent`, {
         method: "POST",
@@ -1539,6 +1581,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
     } catch (error) {
       console.error("Move to parent failed:", error);
       alert(`Failed to move industry: ${(error as Error).message}`);
+      preserveScrollRef.current = false;
     }
   };
 
@@ -1549,6 +1592,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       message: 'Are you sure you want to move this item to another main category?',
       type: 'info',
       onConfirm: async () => {
+        saveScrollPosition();
         try {
           const response = await fetch(`${API_BASE_URL}/industries/update-parent`, {
             method: "POST",
@@ -1566,6 +1610,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
         } catch (error) {
           console.error("Move between categories failed:", error);
           alert(`Failed to move industry between categories: ${(error as Error).message}`);
+          preserveScrollRef.current = false;
         }
         setConfirmModal({ ...confirmModal, isOpen: false });
       }
@@ -1578,6 +1623,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       title: 'Add New Industry',
       placeholder: 'Enter industry name...',
       onConfirm: async (name: string) => {
+        saveScrollPosition();
         try {
           const response = await fetch(`${API_BASE_URL}/industries/`, {
             method: "POST",
@@ -1593,6 +1639,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
         } catch (error) {
           console.error("Add industry failed:", error);
           alert("Failed to add industry. Please try again.");
+          preserveScrollRef.current = false;
         }
         setInputModal({ ...inputModal, isOpen: false });
       }
@@ -1631,7 +1678,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
   }
 
   return (
-    <div style={{
+    <div ref={containerRef} style={{
       marginTop: "20px",
       fontFamily: "Arial, sans-serif",
       maxWidth: "1200px",
