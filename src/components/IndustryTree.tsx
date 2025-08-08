@@ -1196,6 +1196,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
   const scrollPositionRef = React.useRef<number>(0);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const preserveScrollRef = React.useRef<boolean>(false);
+  const operationInProgressRef = React.useRef<boolean>(false);
 
   // SCROLL POSITION SAVE FUNCTION
   const saveScrollPosition = React.useCallback(() => {
@@ -1214,6 +1215,17 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
         });
         preserveScrollRef.current = false;
       }, 50);
+      
+      // Backup restore in case the first one fails
+      setTimeout(() => {
+        if (preserveScrollRef.current) {
+          window.scrollTo({
+            top: scrollPositionRef.current,
+            behavior: 'auto'
+          });
+          preserveScrollRef.current = false;
+        }
+      }, 200);
     }
   }, []);
 
@@ -1430,6 +1442,12 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
   };
 
   const handleRename = async (id: number, name: string) => {
+    // Prevent concurrent operations
+    if (operationInProgressRef.current) {
+      console.log("Operation already in progress, please wait...");
+      return;
+    }
+
     // Validate input
     if (!name || !name.trim()) {
       alert("Industry name cannot be empty");
@@ -1443,6 +1461,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
     }
 
     // SAVE SCROLL POSITION
+    operationInProgressRef.current = true;
     saveScrollPosition();
 
     try {
@@ -1495,6 +1514,8 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       alert(`Failed to rename industry: ${errorMessage}`);
       preserveScrollRef.current = false; // Reset on error
+    } finally {
+      operationInProgressRef.current = false; // Always reset operation flag
     }
   };
 
