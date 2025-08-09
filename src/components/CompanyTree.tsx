@@ -383,6 +383,9 @@ const CompanyTree: React.FC = () => {
 
   // Toggle node expansion
   const toggleNode = useCallback((companyId: string) => {
+    // Save scroll position before toggling to prevent page jump
+    saveScrollPosition();
+    
     setExpandedNodes(prev => {
       const newExpanded = new Set(prev);
       if (newExpanded.has(companyId)) {
@@ -392,7 +395,10 @@ const CompanyTree: React.FC = () => {
       }
       return newExpanded;
     });
-  }, []);
+    
+    // Restore scroll position after DOM update
+    restoreScrollPosition();
+  }, [saveScrollPosition, restoreScrollPosition]);
 
   // Handle form input changes - FIXED VERSION with useCallback
   const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
