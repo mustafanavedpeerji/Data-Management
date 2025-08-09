@@ -1,13 +1,6 @@
 import React, { useState, useEffect, memo, Component, ReactNode, useCallback, useRef } from 'react';
 
-// Declare import.meta.env for Vite
-interface ImportMetaEnv {
-  VITE_API_BASE?: string;
-}
 
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
-}
 
 // Use environment variable for API base URL
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'https://magicfingers.com.pk/backend';
@@ -189,7 +182,9 @@ const CompanyForm: React.FC<{
   formData: FormData;
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   selectedParent: Company | null;
-}> = memo(({ isEditing, onSubmit, onCancel, formData, onInputChange, selectedParent }) => (
+  isSubmitting: boolean;
+  validationErrors: { [key: string]: string };
+}> = memo(({ isEditing, onSubmit, onCancel, formData, onInputChange, selectedParent, isSubmitting, validationErrors }) => (
   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
     <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
       <div className="p-6">
@@ -220,11 +215,19 @@ const CompanyForm: React.FC<{
                 name="company_group_print_name"
                 value={formData.company_group_print_name}
                 onChange={onInputChange}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 ${
+                  validationErrors.company_group_print_name 
+                    ? 'border-red-500 focus:ring-red-500' 
+                    : 'focus:ring-blue-500'
+                }`}
                 required
                 aria-required="true"
                 autoComplete="off"
+                disabled={isSubmitting}
               />
+              {validationErrors.company_group_print_name && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.company_group_print_name}</p>
+              )}
             </div>
             
             <div>
@@ -234,6 +237,7 @@ const CompanyForm: React.FC<{
                 value={formData.company_group_data_type}
                 onChange={onInputChange}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={isSubmitting}
               >
                 <option value="Company">Company</option>
                 <option value="Group">Group</option>
@@ -252,6 +256,7 @@ const CompanyForm: React.FC<{
                 onChange={onInputChange}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 autoComplete="off"
+                disabled={isSubmitting}
               />
             </div>
             
@@ -264,6 +269,7 @@ const CompanyForm: React.FC<{
                 onChange={onInputChange}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 autoComplete="off"
+                disabled={isSubmitting}
               />
             </div>
           </div>
@@ -280,6 +286,7 @@ const CompanyForm: React.FC<{
                     onChange={onInputChange}
                     className="mr-2"
                     id={`${activity}_checkbox`}
+                    disabled={isSubmitting}
                   />
                   <label htmlFor={`${activity}_checkbox`} className="text-sm capitalize">
                     {activity.replace('_', ' ')}
@@ -292,20 +299,40 @@ const CompanyForm: React.FC<{
           <div className="flex justify-end gap-3 pt-4">
             <button
               onClick={onCancel}
-              className="px-4 py-2 border rounded-lg hover:bg-gray-50 transition-colors"
+              disabled={isSubmitting}
+              className={`px-4 py-2 border rounded-lg transition-colors ${
+                isSubmitting 
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                  : 'hover:bg-gray-50'
+              }`}
               type="button"
             >
               Cancel
             </button>
             <button
               onClick={onSubmit}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              disabled={isSubmitting}
+              className={`px-4 py-2 text-white rounded-lg transition-colors inline-flex items-center ${
+                isSubmitting 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
               type="button"
             >
-              <span className="inline-flex items-center">
-                <Check />
-                <span className="ml-2">{isEditing ? 'Update' : 'Create'}</span>
-              </span>
+              {isSubmitting ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </>
+              ) : (
+                <span className="inline-flex items-center">
+                  <Check />
+                  <span className="ml-2">{isEditing ? 'Update' : 'Create'}</span>
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -326,6 +353,8 @@ const CompanyTree: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [selectedParent, setSelectedParent] = useState<Company | null>(null);
   const [formData, setFormData] = useState<FormData>(initialFormState);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: string }>({});
   
   // SCROLL POSITION PRESERVATION - YE NAYE REFS HAIN
   const scrollPositionRef = useRef<number>(0);
@@ -417,20 +446,35 @@ const CompanyTree: React.FC = () => {
       ...prev,
       [name]: value
     }));
-  }, []);
+
+    // Clear validation error for this field when user starts typing
+    if (validationErrors[name]) {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+  }, [validationErrors]);
 
   // Validate form before submission
   const validateForm = useCallback((): boolean => {
+    const errors: { [key: string]: string } = {};
+    
     if (!formData.company_group_print_name.trim()) {
-      setError('Company name is required');
-      return false;
+      errors.company_group_print_name = 'Company name is required';
     }
-    return true;
+    
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
   }, [formData.company_group_print_name]);
 
   // Create new company
   const handleCreateCompany = useCallback(async () => {
     if (!validateForm()) return;
+    
+    setIsSubmitting(true);
+    setError('');
     
     // SCROLL POSITION SAVE KARNE KE LIYE
     saveScrollPosition();
@@ -455,7 +499,7 @@ const CompanyTree: React.FC = () => {
           },
           body: JSON.stringify(payload)
         });
-      } catch (fetchError) {
+      } catch {
         console.log(`Failed with ${endpoint}, trying alternative...`);
         endpoint = `${API_BASE}/companies/create`;
         response = await fetch(endpoint, {
@@ -481,18 +525,24 @@ const CompanyTree: React.FC = () => {
       setShowAddForm(false);
       setFormData(initialFormState);
       setSelectedParent(null);
+      setValidationErrors({});
       setError('');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(`Failed to create company: ${errorMessage}`);
       console.error('Create company error:', err);
       preserveScrollRef.current = false; // Reset on error
+    } finally {
+      setIsSubmitting(false);
     }
   }, [formData, selectedParent, validateForm, fetchCompanies, saveScrollPosition]);
 
   // Update company
   const handleUpdateCompany = useCallback(async () => {
     if (!validateForm() || !editingCompany) return;
+    
+    setIsSubmitting(true);
+    setError('');
     
     // SCROLL POSITION SAVE KARNE KE LIYE
     saveScrollPosition();
@@ -515,11 +565,14 @@ const CompanyTree: React.FC = () => {
       await fetchCompanies();
       setEditingCompany(null);
       setFormData(initialFormState);
+      setValidationErrors({});
       setError('');
     } catch (err) {
       setError(`Failed to update company: ${err instanceof Error ? err.message : 'Unknown error'}`);
       console.error(err);
       preserveScrollRef.current = false; // Reset on error
+    } finally {
+      setIsSubmitting(false);
     }
   }, [formData, editingCompany, validateForm, fetchCompanies, saveScrollPosition]);
 
@@ -582,7 +635,9 @@ const CompanyTree: React.FC = () => {
     setEditingCompany(null);
     setFormData(initialFormState);
     setSelectedParent(null);
+    setValidationErrors({});
     setError('');
+    setIsSubmitting(false);
     // Cancel pe scroll position preserve nahi karna
     preserveScrollRef.current = false;
   }, []);
@@ -783,6 +838,8 @@ const CompanyTree: React.FC = () => {
             formData={formData}
             onInputChange={handleInputChange}
             selectedParent={selectedParent}
+            isSubmitting={isSubmitting}
+            validationErrors={validationErrors}
           />
         )}
       </div>
