@@ -20,6 +20,9 @@ interface DraggableBlockProps {
   onMoveToParent: (childId: number, newParentId: number) => void;
   children?: React.ReactNode;
   level?: number;
+  expandedNodes?: Set<number>;
+  onToggleExpand?: (nodeId: number) => void;
+  showExpandButton?: boolean;
 }
 
 interface MainCategoryBlockProps {
@@ -47,6 +50,10 @@ interface ComparisonPaneProps {
   onMoveToParent: (childId: number, newParentId: number) => void;
   onDropFromOtherPane: (childId: number, newMainCategoryId: number) => void;
   paneScrollRef: React.MutableRefObject<Map<number, HTMLDivElement>>;
+  expandedNodes: Set<number>;
+  onToggleExpand: (nodeId: number) => void;
+  onExpandAll: (categoryId: number) => void;
+  onCollapseAll: (categoryId: number) => void;
 }
 
 interface TreeRecursiveProps {
@@ -57,6 +64,8 @@ interface TreeRecursiveProps {
   onMoveToRoot: (id: number) => void;
   onMoveToParent: (childId: number, newParentId: number) => void;
   level?: number;
+  expandedNodes: Set<number>;
+  onToggleExpand: (nodeId: number) => void;
 }
 
 interface IndustryTreeProps {
@@ -394,7 +403,10 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
   onMoveToRoot, 
   onMoveToParent, 
   children, 
-  level = 0 
+  level = 0,
+  expandedNodes = new Set(),
+  onToggleExpand,
+  showExpandButton = false
 }) => {
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(node.industry_name);
@@ -402,15 +414,15 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
   const [dragOver, setDragOver] = useState(false);
 
   const style: React.CSSProperties = {
-    padding: "8px",
-    margin: "2px 0",
+    padding: "6px",
+    margin: "1px 0",
     border: isDragging ? "2px dashed #007cba" : dragOver ? "2px solid #007cba" : "1px solid #ddd",
-    borderRadius: "6px",
+    borderRadius: "4px",
     background: isDragging ? "#f0f8ff" : dragOver ? "#e6f3ff" : level === 0 ? "#fff" : "#f9f9f9",
-    marginLeft: `${level * 15}px`,
+    marginLeft: `${level * 12}px`,
     opacity: isDragging ? 0.5 : 1,
     cursor: isDragging ? "grabbing" : "grab",
-    boxShadow: isDragging ? "0 6px 20px rgba(0,0,0,0.2)" : dragOver ? "0 3px 12px rgba(0,124,186,0.2)" : "0 1px 3px rgba(0,0,0,0.1)",
+    boxShadow: isDragging ? "0 4px 15px rgba(0,0,0,0.2)" : dragOver ? "0 2px 8px rgba(0,124,186,0.2)" : "0 1px 2px rgba(0,0,0,0.1)",
     transition: isDragging ? "none" : "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
     position: "relative",
     transform: isDragging ? "rotate(2deg) scale(1.02)" : "none",
@@ -552,6 +564,42 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
         onMouseDown={(e) => e.stopPropagation()}
       >
         <div style={{ display: "flex", alignItems: "center", flex: 1 }}>
+          {showExpandButton && node.children && node.children.length > 0 && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onToggleExpand) {
+                  onToggleExpand(node.id);
+                }
+              }}
+              style={{
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: "2px",
+                marginRight: "6px",
+                fontSize: "12px",
+                color: "#666",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: "16px",
+                height: "16px",
+                borderRadius: "3px",
+                transition: "all 0.2s ease"
+              }}
+              onMouseEnter={(e) => {
+                const target = e.target as HTMLButtonElement;
+                target.style.background = "#f0f0f0";
+              }}
+              onMouseLeave={(e) => {
+                const target = e.target as HTMLButtonElement;
+                target.style.background = "none";
+              }}
+            >
+              {expandedNodes.has(node.id) ? '▼' : '▶'}
+            </button>
+          )}
           {!editing && (
             <span
               style={{
@@ -586,12 +634,13 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
             />
           ) : (
             <div style={{ flex: 1 }}>
-              <strong
+              <span
                 onDoubleClick={() => setEditing(true)}
                 style={{
                   cursor: "text",
-                  padding: "4px 0",
-                  fontSize: "14px",
+                  padding: "3px 0",
+                  fontSize: "13px",
+                  fontWeight: "normal",
                   color: level === 0 ? "#333" : "#555",
                   userSelect: "none",
                   transition: "color 0.2s ease",
@@ -600,7 +649,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
                 title="Double-click to edit"
               >
                 {name}
-              </strong>
+              </span>
             </div>
           )}
         </div>
@@ -620,7 +669,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
                 borderRadius: "3px",
                 padding: "4px 6px",
                 cursor: "pointer",
-                fontSize: "11px",
+                fontSize: "10px",
                 fontWeight: "bold",
                 transition: "all 0.2s ease",
                 boxShadow: "0 1px 3px rgba(40,167,69,0.2)",
@@ -655,7 +704,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
               borderRadius: "3px",
               padding: "4px 6px",
               cursor: "pointer",
-              fontSize: "11px",
+              fontSize: "10px",
               fontWeight: "bold",
               transition: "all 0.2s ease",
               boxShadow: "0 1px 3px rgba(0,124,186,0.2)",
@@ -689,10 +738,10 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
               borderRadius: "3px",
               padding: "4px 6px",
               cursor: "pointer",
-              fontSize: "11px",
+              fontSize: "10px",
               fontWeight: "bold",
               transition: "all 0.2s ease",
-              boxShadow: "0 1px 3px rgba(220,53,69,0.2)",
+              boxShadow: "0 1px 3px rgba(220,53,69,0.2)"
             }}
             onMouseEnter={(e) => {
               const target = e.target as HTMLButtonElement;
@@ -712,7 +761,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
         </div>
       </div>
       
-      {children && (
+      {children && (!showExpandButton || expandedNodes.has(node.id)) && (
         <div 
           style={{ marginTop: "6px" }}
           onDragStart={(e) => e.stopPropagation()}
@@ -791,17 +840,17 @@ const MainCategoryBlock: React.FC<MainCategoryBlockProps> = ({
   return (
     <div
       style={{
-        padding: "10px 12px",
-        margin: "4px",
+        padding: "8px 10px",
+        margin: "3px",
         border: isSelected ? "2px solid #007cba" : dragOver ? "2px dashed #007cba" : "1px solid #e0e0e0",
-        borderRadius: "8px",
+        borderRadius: "6px",
         background: isDragging ? "#f0f8ff" : isSelected ? "#e6f3ff" : dragOver ? "#f0f8ff" : "#fff",
         cursor: editing ? "text" : "pointer",
         transition: "all 0.2s ease",
-        boxShadow: isSelected ? "0 4px 15px rgba(0,124,186,0.3)" : dragOver ? "0 3px 12px rgba(0,124,186,0.2)" : "0 1px 6px rgba(0,0,0,0.1)",
+        boxShadow: isSelected ? "0 3px 12px rgba(0,124,186,0.3)" : dragOver ? "0 2px 8px rgba(0,124,186,0.2)" : "0 1px 4px rgba(0,0,0,0.1)",
         opacity: isDragging ? 0.5 : 1,
         transform: isDragging ? "rotate(2deg) scale(1.02)" : "none",
-        minWidth: "90px",
+        minWidth: "80px",
         textAlign: "center",
         position: "relative"
       }}
@@ -841,10 +890,10 @@ const MainCategoryBlock: React.FC<MainCategoryBlockProps> = ({
               setEditing(true);
             }}
             style={{
-              fontSize: "16px",
+              fontSize: "15px",
               fontWeight: "600",
               color: isSelected ? "#007cba" : "#333",
-              marginBottom: "4px"
+              marginBottom: "3px"
             }}
           >
             {category.industry_name}
@@ -928,7 +977,11 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
   onMoveToRoot, 
   onMoveToParent, 
   onDropFromOtherPane,
-  paneScrollRef
+  paneScrollRef,
+  expandedNodes,
+  onToggleExpand,
+  onExpandAll,
+  onCollapseAll
 }) => {
   const [dragOver, setDragOver] = useState(false);
 
@@ -1004,49 +1057,50 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
         alignItems: "center"
       }}>
         <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: "bold", fontSize: "16px" }}>
+          <div style={{ fontWeight: "normal", fontSize: "15px" }}>
             {category.industry_name}
           </div>
-          <div style={{ fontSize: "12px", opacity: 0.8 }}>
+          <div style={{ fontSize: "11px", opacity: 0.8 }}>
             Position #{position}
           </div>
         </div>
         
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onAddChild(category.id);
-          }}
-          title={`Add child to ${category.industry_name}`}
-          style={{
-            background: "rgba(255,255,255,0.2)",
-            color: "white",
-            border: "1px solid rgba(255,255,255,0.3)",
-            borderRadius: "3px",
-            padding: "4px 8px",
-            cursor: "pointer",
-            fontSize: "12px",
-            fontWeight: "bold",
-            marginRight: "6px",
-            transition: "all 0.2s ease",
-            display: "flex",
-            alignItems: "center",
-            gap: "3px"
-          }}
-          onMouseEnter={(e) => {
-            const target = e.target as HTMLButtonElement;
-            target.style.background = "rgba(255,255,255,0.3)";
-            target.style.transform = "scale(1.05)";
-          }}
-          onMouseLeave={(e) => {
-            const target = e.target as HTMLButtonElement;
-            target.style.background = "rgba(255,255,255,0.2)";
-            target.style.transform = "scale(1)";
-          }}
-        >
-          <span style={{ fontSize: "16px" }}>+</span>
-          <span style={{ fontSize: "11px" }}>Add</span>
-        </button>
+        <div style={{ display: "flex", gap: "4px" }}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onAddChild(category.id);
+            }}
+            title={`Add child to ${category.industry_name}`}
+            style={{
+              background: "rgba(255,255,255,0.2)",
+              color: "white",
+              border: "1px solid rgba(255,255,255,0.3)",
+              borderRadius: "3px",
+              padding: "4px 8px",
+              cursor: "pointer",
+              fontSize: "12px",
+              fontWeight: "bold",
+              transition: "all 0.2s ease",
+              display: "flex",
+              alignItems: "center",
+              gap: "3px"
+            }}
+            onMouseEnter={(e) => {
+              const target = e.target as HTMLButtonElement;
+              target.style.background = "rgba(255,255,255,0.3)";
+              target.style.transform = "scale(1.05)";
+            }}
+            onMouseLeave={(e) => {
+              const target = e.target as HTMLButtonElement;
+              target.style.background = "rgba(255,255,255,0.2)";
+              target.style.transform = "scale(1)";
+            }}
+          >
+            <span style={{ fontSize: "14px" }}>+</span>
+            <span style={{ fontSize: "10px" }}>Add</span>
+          </button>
+        </div>
         
         <button
           onClick={onClose}
@@ -1057,7 +1111,7 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
             borderRadius: "3px",
             padding: "3px 6px",
             cursor: "pointer",
-            fontSize: "11px"
+            fontSize: "10px"
           }}
         >
           ✕
@@ -1073,8 +1127,8 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
           borderRadius: "8px",
           textAlign: "center",
           color: "#28a745",
-          fontSize: "14px",
-          fontWeight: "bold"
+          fontSize: "13px",
+          fontWeight: "normal"
         }}>
           Drop here to move to {category.industry_name}
         </div>
@@ -1089,7 +1143,7 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
         style={{
           padding: "12px"
         }}>
-        {tree.length > 0 && tree[0].children && tree[0].children.length > 0 ? (
+        {tree.length > 0 && tree[0] && tree[0].children && tree[0].children.length > 0 ? (
           <TreeRecursive
             nodes={tree[0].children}
             onDelete={onDelete}
@@ -1098,6 +1152,8 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
             onMoveToRoot={onMoveToRoot}
             onMoveToParent={onMoveToParent}
             level={1}
+            expandedNodes={expandedNodes}
+            onToggleExpand={onToggleExpand}
           />
         ) : (
           <div style={{
@@ -1141,6 +1197,8 @@ const TreeRecursive: React.FC<TreeRecursiveProps> = ({
   onMoveToRoot,
   onMoveToParent,
   level = 0,
+  expandedNodes,
+  onToggleExpand
 }) => {
   return (
     <div onDragStart={(e) => e.stopPropagation()}>
@@ -1154,6 +1212,9 @@ const TreeRecursive: React.FC<TreeRecursiveProps> = ({
           onMoveToRoot={onMoveToRoot}
           onMoveToParent={onMoveToParent}
           level={level}
+          expandedNodes={expandedNodes}
+          onToggleExpand={onToggleExpand}
+          showExpandButton={true}
         >
           {node.children && node.children.length > 0 && (
             <TreeRecursive
@@ -1164,6 +1225,8 @@ const TreeRecursive: React.FC<TreeRecursiveProps> = ({
               onMoveToRoot={onMoveToRoot}
               onMoveToParent={onMoveToParent}
               level={level + 1}
+              expandedNodes={expandedNodes}
+              onToggleExpand={onToggleExpand}
             />
           )}
         </DraggableBlock>
@@ -1181,6 +1244,10 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
   const [loading, setLoading] = useState(false);
   const [mainCategoriesOrder, setMainCategoriesOrder] = useState<number[]>([]);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  
+  // EXPAND/COLLAPSE STATE MANAGEMENT
+  const [expandedNodes, setExpandedNodes] = useState<Map<number, Set<number>>>(new Map());
+  const [globalExpandState, setGlobalExpandState] = useState<boolean>(false);
 
   // SCROLL POSITION PRESERVATION
   const scrollPositionRef = React.useRef<number>(0);
@@ -1686,6 +1753,101 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
     });
   };
 
+  // EXPAND/COLLAPSE HANDLERS
+  const handleToggleExpand = (categoryId: number, nodeId: number) => {
+    setExpandedNodes(prev => {
+      const newMap = new Map(prev);
+      const categorySet = newMap.get(categoryId) || new Set();
+      const newSet = new Set(categorySet);
+      
+      if (newSet.has(nodeId)) {
+        newSet.delete(nodeId);
+      } else {
+        newSet.add(nodeId);
+      }
+      
+      newMap.set(categoryId, newSet);
+      return newMap;
+    });
+  };
+
+  const handleExpandAll = (categoryId: number) => {
+    const categoryTree = getTreeForCategory(categoryId);
+    if (categoryTree.length === 0) return;
+    
+    const getAllNodeIds = (nodes: Industry[]): number[] => {
+      const ids: number[] = [];
+      nodes.forEach(node => {
+        ids.push(node.id);
+        if (node.children && node.children.length > 0) {
+          ids.push(...getAllNodeIds(node.children));
+        }
+      });
+      return ids;
+    };
+    
+    const allNodeIds = getAllNodeIds(categoryTree[0].children || []);
+    
+    setExpandedNodes(prev => {
+      const newMap = new Map(prev);
+      newMap.set(categoryId, new Set(allNodeIds));
+      return newMap;
+    });
+  };
+
+  const handleCollapseAll = (categoryId: number) => {
+    setExpandedNodes(prev => {
+      const newMap = new Map(prev);
+      newMap.set(categoryId, new Set());
+      return newMap;
+    });
+  };
+
+  // GLOBAL EXPAND/COLLAPSE FUNCTIONS
+  const isAnyNodeExpanded = () => {
+    for (const [categoryId, nodeSet] of expandedNodes) {
+      if (nodeSet.size > 0) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const handleGlobalExpandCollapseAll = () => {
+    const hasExpandedNodes = isAnyNodeExpanded();
+    
+    if (hasExpandedNodes) {
+      // Currently has expanded nodes, so collapse all
+      setExpandedNodes(new Map());
+      setGlobalExpandState(false);
+    } else {
+      // Currently collapsed, so expand all
+      const newMap = new Map<number, Set<number>>();
+      
+      selectedCategories.forEach(category => {
+        const categoryTree = getTreeForCategory(category.id);
+        if (categoryTree.length > 0) {
+          const getAllNodeIds = (nodes: Industry[]): number[] => {
+            const ids: number[] = [];
+            nodes.forEach(node => {
+              ids.push(node.id);
+              if (node.children && node.children.length > 0) {
+                ids.push(...getAllNodeIds(node.children));
+              }
+            });
+            return ids;
+          };
+          
+          const allNodeIds = getAllNodeIds(categoryTree[0].children || []);
+          newMap.set(category.id, new Set(allNodeIds));
+        }
+      });
+      
+      setExpandedNodes(newMap);
+      setGlobalExpandState(true);
+    }
+  };
+
   const orderedMainCategories = mainCategoriesOrder
     .map(id => mainCategories.find(cat => cat.id === id))
     .filter((cat): cat is Industry => cat !== undefined);
@@ -1719,11 +1881,10 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
 
   return (
     <div ref={containerRef} style={{
-      marginTop: "20px",
       fontFamily: "Arial, sans-serif",
       maxWidth: "1200px",
       margin: "0 auto",
-      padding: "20px"
+      padding: "0 20px 10px 20px"
     }}>
       <style>{`
         @keyframes pulse {
@@ -1889,26 +2050,54 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
                 (Drag items between panes to move, + to add children directly)
               </span>
             </h3>
-            <button
-              onClick={() => {
-                // Clear all scroll refs when clearing all panes
-                paneScrollRefs.current.clear();
-                paneScrollPositions.current.clear();
-                setSelectedCategories([]);
-              }}
-              style={{
-                background: "#6c757d",
-                color: "white",
-                border: "none",
-                borderRadius: "4px",
-                padding: "8px 16px",
-                cursor: "pointer",
-                fontSize: "12px",
-                fontWeight: "bold"
-              }}
-            >
-              Clear All
-            </button>
+            <div style={{ display: "flex", gap: "8px" }}>
+              <button
+                onClick={handleGlobalExpandCollapseAll}
+                style={{
+                  background: "#007cba",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  padding: "8px 16px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  transition: "all 0.2s ease"
+                }}
+                onMouseEnter={(e) => {
+                  const target = e.target as HTMLButtonElement;
+                  target.style.background = "#0056b3";
+                }}
+                onMouseLeave={(e) => {
+                  const target = e.target as HTMLButtonElement;
+                  target.style.background = "#007cba";
+                }}
+              >
+                {isAnyNodeExpanded() ? "Collapse All" : "Expand All"}
+              </button>
+              <button
+                onClick={() => {
+                  // Clear all scroll refs and expanded nodes when clearing all panes
+                  paneScrollRefs.current.clear();
+                  paneScrollPositions.current.clear();
+                  setExpandedNodes(new Map());
+                  setGlobalExpandState(false);
+                  setSelectedCategories([]);
+                }}
+                style={{
+                  background: "#6c757d",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "4px",
+                  padding: "8px 16px",
+                  cursor: "pointer",
+                  fontSize: "12px",
+                  fontWeight: "bold"
+                }}
+              >
+                Clear All
+              </button>
+            </div>
           </div>
           
           <div style={{
@@ -1927,9 +2116,14 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
                   category={category}
                   position={index + 1}
                   onClose={() => {
-                    // Clean up scroll ref for this pane
+                    // Clean up scroll ref and expanded nodes for this pane
                     paneScrollRefs.current.delete(category.id);
                     paneScrollPositions.current.delete(category.id);
+                    setExpandedNodes(prev => {
+                      const newMap = new Map(prev);
+                      newMap.delete(category.id);
+                      return newMap;
+                    });
                     setSelectedCategories(prev => 
                       prev.filter(sc => sc.id !== category.id)
                     );
@@ -1942,6 +2136,10 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
                   onMoveToParent={handleMoveToParent}
                   onDropFromOtherPane={handleDropFromOtherPane}
                   paneScrollRef={paneScrollRefs}
+                  expandedNodes={expandedNodes.get(category.id) || new Set()}
+                  onToggleExpand={(nodeId) => handleToggleExpand(category.id, nodeId)}
+                  onExpandAll={handleExpandAll}
+                  onCollapseAll={handleCollapseAll}
                 />
               );
             })}
