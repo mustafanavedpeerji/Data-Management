@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import API_BASE_URL from '../config/api'; // Adjust path as needed
 import apiClient from '../config/apiClient';
+import { useTheme } from '../context/ThemeContext';
 
 // Type definitions
 interface Industry {
@@ -90,6 +91,7 @@ interface InputModalProps {
 
 const InputModal: React.FC<InputModalProps> = ({ isOpen, title, placeholder, onConfirm, onCancel }) => {
   const [value, setValue] = useState('');
+  const { theme } = useTheme();
 
   useEffect(() => {
     if (isOpen) {
@@ -115,140 +117,86 @@ const InputModal: React.FC<InputModalProps> = ({ isOpen, title, placeholder, onC
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 10000,
-      animation: 'fadeIn 0.2s ease-out'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        padding: '30px',
-        minWidth: '400px',
-        maxWidth: '500px',
-        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-        animation: 'slideIn 0.3s ease-out'
-      }}>
-        <h3 style={{
-          margin: '0 0 20px 0',
-          color: '#333',
-          fontSize: '18px',
-          textAlign: 'center'
-        }}>
-          {title}
-        </h3>
-        
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onKeyDown={handleKeyPress}
-          placeholder={placeholder}
-          autoFocus
-          style={{
-            width: '100%',
-            padding: '12px 16px',
-            border: '2px solid #e0e0e0',
-            borderRadius: '8px',
-            fontSize: '14px',
-            outline: 'none',
-            marginBottom: '25px',
-            transition: 'border-color 0.2s ease',
-            boxSizing: 'border-box'
-          }}
-          onFocus={(e) => e.target.style.borderColor = '#007cba'}
-          onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
-        />
-        
-        <div style={{
-          display: 'flex',
-          gap: '12px',
-          justifyContent: 'flex-end'
-        }}>
-          <button
-            onClick={onCancel}
-            style={{
-              padding: '10px 20px',
-              border: '2px solid #e0e0e0',
-              borderRadius: '6px',
-              backgroundColor: 'white',
-              color: '#666',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              const target = e.target as HTMLButtonElement;
-              target.style.backgroundColor = '#f5f5f5';
-              target.style.borderColor = '#ccc';
-            }}
-            onMouseLeave={(e) => {
-              const target = e.target as HTMLButtonElement;
-              target.style.backgroundColor = 'white';
-              target.style.borderColor = '#e0e0e0';
-            }}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={!value.trim()}
-            style={{
-              padding: '10px 20px',
-              border: 'none',
-              borderRadius: '6px',
-              backgroundColor: value.trim() ? '#007cba' : '#ccc',
-              color: 'white',
-              cursor: value.trim() ? 'pointer' : 'not-allowed',
-              fontSize: '14px',
-              fontWeight: '500',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              if (value.trim()) {
-                const target = e.target as HTMLButtonElement;
-                target.style.backgroundColor = '#0056b3';
-                target.style.transform = 'translateY(-1px)';
+    <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-gray-900/50 animate-in fade-in-0 duration-300">
+      <div className={`
+        relative w-full max-w-md mx-4 rounded-2xl shadow-xl 
+        ${theme === 'dark' 
+          ? 'bg-gray-800 border border-gray-700' 
+          : 'bg-white border border-gray-200'
+        }
+        animate-in zoom-in-95 duration-300
+      `}>
+        {/* Close Button */}
+        <button
+          onClick={onCancel}
+          className={`
+            absolute right-4 top-4 rounded-full p-2 transition-colors
+            ${theme === 'dark'
+              ? 'hover:bg-gray-700 text-gray-400 hover:text-gray-200'
+              : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+            }
+          `}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        {/* Content */}
+        <div className="p-6">
+          <h3 className={`
+            text-lg font-semibold mb-4 text-center
+            ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}
+          `}>
+            {title}
+          </h3>
+          
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={handleKeyPress}
+            placeholder={placeholder}
+            autoFocus
+            className={`
+              w-full px-4 py-3 rounded-lg border-2 text-sm transition-colors mb-6
+              focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500
+              ${theme === 'dark'
+                ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400'
+                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
               }
-            }}
-            onMouseLeave={(e) => {
-              if (value.trim()) {
-                const target = e.target as HTMLButtonElement;
-                target.style.backgroundColor = '#007cba';
-                target.style.transform = 'translateY(0)';
-              }
-            }}
-          >
-            Confirm
-          </button>
+            `}
+          />
+          
+          <div className="flex gap-3 justify-end">
+            <button
+              onClick={onCancel}
+              className={`
+                px-4 py-2 rounded-lg text-sm font-medium transition-colors
+                ${theme === 'dark'
+                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                }
+              `}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={!value.trim()}
+              className={`
+                px-4 py-2 rounded-lg text-sm font-medium transition-all
+                ${value.trim()
+                  ? 'bg-brand-500 text-white hover:bg-brand-600 hover:scale-[1.02] shadow-sm'
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                }
+              `}
+            >
+              Confirm
+            </button>
+          </div>
         </div>
       </div>
-      
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes slideIn {
-          from { 
-            opacity: 0;
-            transform: scale(0.9) translateY(-20px);
-          }
-          to { 
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
-        }
-      `}</style>
     </div>
   );
 };
@@ -274,120 +222,117 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
   onCancel,
   type = 'info'
 }) => {
-  const getColors = () => {
+  const { theme } = useTheme();
+  
+  const getButtonClasses = () => {
     switch (type) {
       case 'danger':
-        return { primary: '#dc3545', hover: '#c82333' };
+        return 'bg-red-500 hover:bg-red-600 text-white';
       case 'warning':
-        return { primary: '#ffc107', hover: '#e0a800' };
+        return 'bg-orange-500 hover:bg-orange-600 text-white';
       default:
-        return { primary: '#007cba', hover: '#0056b3' };
+        return 'bg-brand-500 hover:bg-brand-600 text-white';
     }
   };
 
-  const colors = getColors();
+  const getIcon = () => {
+    switch (type) {
+      case 'danger':
+        return (
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20 mb-4">
+            <svg className="h-6 w-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+        );
+      case 'warning':
+        return (
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/20 mb-4">
+            <svg className="h-6 w-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        );
+      default:
+        return (
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/20 mb-4">
+            <svg className="h-6 w-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        );
+    }
+  };
 
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0, 0, 0, 0.5)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 10000,
-      animation: 'fadeIn 0.2s ease-out'
-    }}>
-      <div style={{
-        backgroundColor: 'white',
-        borderRadius: '12px',
-        padding: '30px',
-        minWidth: '400px',
-        maxWidth: '500px',
-        boxShadow: '0 20px 60px rgba(0, 0, 0, 0.3)',
-        animation: 'slideIn 0.3s ease-out'
-      }}>
-        <h3 style={{
-          margin: '0 0 15px 0',
-          color: '#333',
-          fontSize: '18px',
-          textAlign: 'center'
-        }}>
-          {title}
-        </h3>
-        
-        <p style={{
-          margin: '0 0 25px 0',
-          color: '#666',
-          fontSize: '14px',
-          lineHeight: '1.5',
-          textAlign: 'center'
-        }}>
-          {message}
-        </p>
-        
-        <div style={{
-          display: 'flex',
-          gap: '12px',
-          justifyContent: 'center'
-        }}>
-          <button
-            onClick={onCancel}
-            style={{
-              padding: '10px 20px',
-              border: '2px solid #e0e0e0',
-              borderRadius: '6px',
-              backgroundColor: 'white',
-              color: '#666',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              const target = e.target as HTMLButtonElement;
-              target.style.backgroundColor = '#f5f5f5';
-              target.style.borderColor = '#ccc';
-            }}
-            onMouseLeave={(e) => {
-              const target = e.target as HTMLButtonElement;
-              target.style.backgroundColor = 'white';
-              target.style.borderColor = '#e0e0e0';
-            }}
-          >
-            {cancelText}
-          </button>
-          <button
-            onClick={onConfirm}
-            style={{
-              padding: '10px 20px',
-              border: 'none',
-              borderRadius: '6px',
-              backgroundColor: colors.primary,
-              color: 'white',
-              cursor: 'pointer',
-              fontSize: '14px',
-              fontWeight: '500',
-              transition: 'all 0.2s ease'
-            }}
-            onMouseEnter={(e) => {
-              const target = e.target as HTMLButtonElement;
-              target.style.backgroundColor = colors.hover;
-              target.style.transform = 'translateY(-1px)';
-            }}
-            onMouseLeave={(e) => {
-              const target = e.target as HTMLButtonElement;
-              target.style.backgroundColor = colors.primary;
-              target.style.transform = 'translateY(0)';
-            }}
-          >
-            {confirmText}
-          </button>
+    <div className="fixed inset-0 flex items-center justify-center z-50 backdrop-blur-sm bg-gray-900/50 animate-in fade-in-0 duration-300">
+      <div className={`
+        relative w-full max-w-md mx-4 rounded-2xl shadow-xl 
+        ${theme === 'dark' 
+          ? 'bg-gray-800 border border-gray-700' 
+          : 'bg-white border border-gray-200'
+        }
+        animate-in zoom-in-95 duration-300
+      `}>
+        {/* Close Button */}
+        <button
+          onClick={onCancel}
+          className={`
+            absolute right-4 top-4 rounded-full p-2 transition-colors
+            ${theme === 'dark'
+              ? 'hover:bg-gray-700 text-gray-400 hover:text-gray-200'
+              : 'hover:bg-gray-100 text-gray-500 hover:text-gray-700'
+            }
+          `}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+
+        {/* Content */}
+        <div className="p-6 text-center">
+          {getIcon()}
+          
+          <h3 className={`
+            text-lg font-semibold mb-3
+            ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}
+          `}>
+            {title}
+          </h3>
+          
+          <p className={`
+            text-sm mb-6 leading-relaxed
+            ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}
+          `}>
+            {message}
+          </p>
+          
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={onCancel}
+              className={`
+                px-4 py-2 rounded-lg text-sm font-medium transition-colors
+                ${theme === 'dark'
+                  ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
+                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'
+                }
+              `}
+            >
+              {cancelText}
+            </button>
+            <button
+              onClick={onConfirm}
+              className={`
+                px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-[1.02] shadow-sm
+                ${getButtonClasses()}
+              `}
+            >
+              {confirmText}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -1237,6 +1182,7 @@ const TreeRecursive: React.FC<TreeRecursiveProps> = ({
 
 // ----------- Main Industry Tree ----------
 const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
+  const { theme } = useTheme();
   const [industries, setIndustries] = useState<Industry[]>([]);
   const [tree, setTree] = useState<Industry[]>([]);
   const [mainCategories, setMainCategories] = useState<Industry[]>([]);
@@ -1880,127 +1826,81 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
   }
 
   return (
-    <div ref={containerRef} style={{
-      fontFamily: "Arial, sans-serif",
-      maxWidth: "1200px",
-      margin: "0 auto",
-      padding: "0 20px 10px 20px"
-    }}>
-      <style>{`
-        @keyframes pulse {
-          0% { opacity: 0.1; }
-          50% { opacity: 0.2; }
-          100% { opacity: 0.1; }
-        }
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
+    <div ref={containerRef} className={`
+      max-w-7xl mx-auto px-5 pb-6 transition-colors duration-200
+      ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}
+    `}>
       
       {/* Header */}
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: "25px",
-        paddingBottom: "20px",
-        borderBottom: "2px solid #f0f0f0"
-      }}>
-        <h2 style={{ margin: 0, color: "#333", fontSize: "24px" }}>Industry Management</h2>
+      <div className={`
+        flex justify-between items-center mb-6 pb-5
+        border-b-2 ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}
+      `}>
+        <h2 className={`
+          text-2xl font-semibold m-0
+          ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}
+        `}>
+          Industry Management
+        </h2>
         <button
           onClick={handleAddRoot}
-          style={{
-            background: "#007cba",
-            color: "white",
-            border: "none",
-            borderRadius: "6px",
-            padding: "12px 24px",
-            cursor: "pointer",
-            fontSize: "14px",
-            fontWeight: "bold",
-            transition: "all 0.2s ease",
-            boxShadow: "0 2px 4px rgba(0,124,186,0.2)",
-          }}
-          onMouseEnter={(e) => {
-            const target = e.target as HTMLButtonElement;
-            target.style.background = "#0056b3";
-            target.style.transform = "translateY(-1px)";
-            target.style.boxShadow = "0 4px 8px rgba(0,124,186,0.3)";
-          }}
-          onMouseLeave={(e) => {
-            const target = e.target as HTMLButtonElement;
-            target.style.background = "#007cba";
-            target.style.transform = "translateY(0)";
-            target.style.boxShadow = "0 2px 4px rgba(0,124,186,0.2)";
-          }}
+          className="
+            bg-brand-500 hover:bg-brand-600 text-white font-medium
+            px-6 py-3 rounded-lg text-sm transition-all duration-200
+            hover:scale-[1.02] shadow-sm hover:shadow-md
+            focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2
+            dark:focus:ring-offset-gray-800
+          "
         >
           + Add Industry
         </button>
       </div>
 
       {/* Main Categories Section */}
-      <div style={{
-        marginBottom: "30px",
-        padding: "20px",
-        background: "#f8f9fa",
-        borderRadius: "12px",
-        border: "2px solid #e9ecef"
-      }}>
-        <h3 style={{ 
-          margin: "0 0 20px 0", 
-          color: "#333", 
-          fontSize: "18px",
-          display: "flex",
-          alignItems: "center",
-          gap: "10px"
-        }}>
+      <div className={`
+        mb-8 p-5 rounded-xl border-2 transition-colors duration-200
+        ${theme === 'dark' 
+          ? 'bg-gray-800/50 border-gray-700' 
+          : 'bg-gray-50 border-gray-200'
+        }
+      `}>
+        <h3 className={`
+          flex items-center gap-3 mb-5 text-lg font-semibold
+          ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}
+        `}>
           <span>📁</span>
           Main Categories
-          <span style={{ 
-            fontSize: "12px", 
-            color: "#666", 
-            fontWeight: "normal",
-            fontStyle: "italic"
-          }}>
+          <span className={`
+            text-xs font-normal italic
+            ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}
+          `}>
             (Click to expand, drag to reorder, × to delete)
           </span>
         </h3>
         
         {orderedMainCategories.length === 0 ? (
-          <div style={{
-            textAlign: "center",
-            padding: "40px",
-            color: "#666",
-            background: "#fff",
-            borderRadius: "8px",
-            border: "2px dashed #ddd"
-          }}>
-            <div style={{ fontSize: "32px", marginBottom: "15px", opacity: 0.3 }}>📂</div>
-            <p style={{ marginBottom: "15px" }}>No main categories available.</p>
+          <div className={`
+            text-center p-10 rounded-lg border-2 border-dashed transition-colors duration-200
+            ${theme === 'dark' 
+              ? 'bg-gray-900/30 border-gray-600 text-gray-400' 
+              : 'bg-white border-gray-300 text-gray-600'
+            }
+          `}>
+            <div className="text-3xl mb-4 opacity-30">📂</div>
+            <p className="mb-4">No main categories available.</p>
             <button
               onClick={handleAddRoot}
-              style={{
-                background: "#007cba",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                padding: "10px 20px",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontWeight: "bold"
-              }}
+              className="
+                bg-brand-500 hover:bg-brand-600 text-white font-medium
+                px-5 py-2 rounded-lg text-sm transition-all duration-200
+                hover:scale-[1.02]
+              "
             >
               Create First Category
             </button>
           </div>
         ) : (
-          <div style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: "12px",
-            justifyContent: "flex-start"
-          }}>
+          <div className="flex flex-wrap gap-3 justify-start">
             {orderedMainCategories.map((category, index) => (
               <MainCategoryBlock
                 key={category.id}
@@ -2022,56 +1922,29 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
 
       {/* Comparison Panes Section */}
       {selectedCategories.length > 0 && (
-        <div style={{
-          marginBottom: "30px"
-        }}>
-          <div style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            marginBottom: "20px"
-          }}>
-            <h3 style={{ 
-              margin: 0, 
-              color: "#333", 
-              fontSize: "18px",
-              display: "flex",
-              alignItems: "center",
-              gap: "10px"
-            }}>
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className={`
+              flex items-center gap-3 text-lg font-semibold
+              ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}
+            `}>
               <span>🔍</span>
               Category Comparison ({selectedCategories.length})
-              <span style={{ 
-                fontSize: "12px", 
-                color: "#666", 
-                fontWeight: "normal",
-                fontStyle: "italic"
-              }}>
+              <span className={`
+                text-xs font-normal italic
+                ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}
+              `}>
                 (Drag items between panes to move, + to add children directly)
               </span>
             </h3>
-            <div style={{ display: "flex", gap: "8px" }}>
+            <div className="flex gap-2">
               <button
                 onClick={handleGlobalExpandCollapseAll}
-                style={{
-                  background: "#007cba",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  padding: "8px 16px",
-                  cursor: "pointer",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  transition: "all 0.2s ease"
-                }}
-                onMouseEnter={(e) => {
-                  const target = e.target as HTMLButtonElement;
-                  target.style.background = "#0056b3";
-                }}
-                onMouseLeave={(e) => {
-                  const target = e.target as HTMLButtonElement;
-                  target.style.background = "#007cba";
-                }}
+                className="
+                  bg-brand-500 hover:bg-brand-600 text-white font-medium
+                  px-4 py-2 rounded-lg text-sm transition-all duration-200
+                  hover:scale-[1.02]
+                "
               >
                 {isAnyNodeExpanded() ? "Collapse All" : "Expand All"}
               </button>
@@ -2084,29 +1957,24 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
                   setGlobalExpandState(false);
                   setSelectedCategories([]);
                 }}
-                style={{
-                  background: "#6c757d",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "4px",
-                  padding: "8px 16px",
-                  cursor: "pointer",
-                  fontSize: "12px",
-                  fontWeight: "bold"
-                }}
+                className="
+                  bg-gray-500 hover:bg-gray-600 text-white font-medium
+                  px-4 py-2 rounded-lg text-sm transition-all duration-200
+                  hover:scale-[1.02]
+                "
               >
                 Clear All
               </button>
             </div>
           </div>
           
-          <div style={{
-            display: "grid",
-            gridTemplateColumns: selectedCategories.length === 1 ? "1fr" : 
-                               selectedCategories.length === 2 ? "1fr 1fr" : 
-                               "repeat(3, 1fr)",
-            gap: "15px"
-          }}>
+          <div className={`
+            grid gap-4
+            ${selectedCategories.length === 1 ? 'grid-cols-1' : 
+              selectedCategories.length === 2 ? 'grid-cols-1 lg:grid-cols-2' : 
+              'grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'
+            }
+          `}>
             {selectedCategories.map((category, index) => {
               const categoryTree = getTreeForCategory(category.id);
               
@@ -2148,24 +2016,28 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
       )}
 
       {/* Instructions */}
-      <div style={{
-        marginTop: "30px",
-        padding: "20px",
-        background: "#f8f9fa",
-        borderRadius: "8px",
-        fontSize: "13px",
-        color: "#666"
-      }}>
-        <strong style={{ color: "#333", fontSize: "14px" }}>Instructions:</strong>
-        <div style={{ 
-          display: "grid", 
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", 
-          gap: "15px", 
-          marginTop: "10px" 
-        }}>
+      <div className={`
+        mt-8 p-5 rounded-xl text-sm transition-colors duration-200
+        ${theme === 'dark' 
+          ? 'bg-gray-800/50 border border-gray-700 text-gray-300' 
+          : 'bg-gray-50 border border-gray-200 text-gray-600'
+        }
+      `}>
+        <div className={`
+          font-semibold text-base mb-3
+          ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}
+        `}>
+          Instructions:
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div>
-            <strong>Main Categories:</strong>
-            <ul style={{ margin: "5px 0", paddingLeft: "20px", lineHeight: "1.4" }}>
+            <div className={`
+              font-semibold mb-2
+              ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}
+            `}>
+              Main Categories:
+            </div>
+            <ul className="space-y-1 pl-5 list-disc leading-relaxed">
               <li>Click any main category to view its tree</li>
               <li>Drag main categories to reorder them (visual only)</li>
               <li>Double-click to rename categories</li>
@@ -2174,8 +2046,13 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
             </ul>
           </div>
           <div>
-            <strong>Tree Operations:</strong>
-            <ul style={{ margin: "5px 0", paddingLeft: "20px", lineHeight: "1.4" }}>
+            <div className={`
+              font-semibold mb-2
+              ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}
+            `}>
+              Tree Operations:
+            </div>
+            <ul className="space-y-1 pl-5 list-disc leading-relaxed">
               <li>Double-click on any industry name to edit it</li>
               <li>Drag and drop industries between comparison panes</li>
               <li>Drag children from one main category to another</li>
