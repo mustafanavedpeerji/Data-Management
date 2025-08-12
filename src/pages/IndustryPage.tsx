@@ -9,7 +9,6 @@ const IndustryPage = () => {
         description="Industry Tree Page"
       />
       <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">Industry Page</h1>
         <IndustryTree />
       </div>
     </>

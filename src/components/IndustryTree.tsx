@@ -402,15 +402,15 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
   const [dragOver, setDragOver] = useState(false);
 
   const style: React.CSSProperties = {
-    padding: "12px",
-    margin: "4px 0",
+    padding: "8px",
+    margin: "2px 0",
     border: isDragging ? "2px dashed #007cba" : dragOver ? "2px solid #007cba" : "1px solid #ddd",
-    borderRadius: "8px",
+    borderRadius: "6px",
     background: isDragging ? "#f0f8ff" : dragOver ? "#e6f3ff" : level === 0 ? "#fff" : "#f9f9f9",
-    marginLeft: `${level * 20}px`,
+    marginLeft: `${level * 15}px`,
     opacity: isDragging ? 0.5 : 1,
     cursor: isDragging ? "grabbing" : "grab",
-    boxShadow: isDragging ? "0 8px 25px rgba(0,0,0,0.2)" : dragOver ? "0 4px 15px rgba(0,124,186,0.2)" : "0 2px 4px rgba(0,0,0,0.1)",
+    boxShadow: isDragging ? "0 6px 20px rgba(0,0,0,0.2)" : dragOver ? "0 3px 12px rgba(0,124,186,0.2)" : "0 1px 3px rgba(0,0,0,0.1)",
     transition: isDragging ? "none" : "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
     position: "relative",
     transform: isDragging ? "rotate(2deg) scale(1.02)" : "none",
@@ -601,21 +601,11 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
               >
                 {name}
               </strong>
-              <small
-                style={{
-                  color: "#888",
-                  fontSize: "11px",
-                  fontStyle: "italic",
-                  marginTop: "2px"
-                }}
-              >
-                {node.category}
-              </small>
             </div>
           )}
         </div>
         
-        <div style={{ display: "flex", gap: "6px", marginLeft: "12px" }}>
+        <div style={{ display: "flex", gap: "4px", marginLeft: "8px" }}>
           {level > 0 && (
             <button
               onClick={(e) => {
@@ -627,13 +617,13 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
                 background: "#28a745",
                 color: "white",
                 border: "none",
-                borderRadius: "4px",
-                padding: "6px 8px",
+                borderRadius: "3px",
+                padding: "4px 6px",
                 cursor: "pointer",
-                fontSize: "12px",
+                fontSize: "11px",
                 fontWeight: "bold",
                 transition: "all 0.2s ease",
-                boxShadow: "0 2px 4px rgba(40,167,69,0.2)",
+                boxShadow: "0 1px 3px rgba(40,167,69,0.2)",
               }}
               onMouseEnter={(e) => {
                 const target = e.target as HTMLButtonElement;
@@ -662,13 +652,13 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
               background: "#007cba",
               color: "white",
               border: "none",
-              borderRadius: "4px",
-              padding: "6px 8px",
+              borderRadius: "3px",
+              padding: "4px 6px",
               cursor: "pointer",
-              fontSize: "12px",
+              fontSize: "11px",
               fontWeight: "bold",
               transition: "all 0.2s ease",
-              boxShadow: "0 2px 4px rgba(0,124,186,0.2)",
+              boxShadow: "0 1px 3px rgba(0,124,186,0.2)",
             }}
             onMouseEnter={(e) => {
               const target = e.target as HTMLButtonElement;
@@ -696,13 +686,13 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
               background: "#dc3545",
               color: "white",
               border: "none",
-              borderRadius: "4px",
-              padding: "6px 8px",
+              borderRadius: "3px",
+              padding: "4px 6px",
               cursor: "pointer",
-              fontSize: "12px",
+              fontSize: "11px",
               fontWeight: "bold",
               transition: "all 0.2s ease",
-              boxShadow: "0 2px 4px rgba(220,53,69,0.2)",
+              boxShadow: "0 1px 3px rgba(220,53,69,0.2)",
             }}
             onMouseEnter={(e) => {
               const target = e.target as HTMLButtonElement;
@@ -724,7 +714,7 @@ const DraggableBlock: React.FC<DraggableBlockProps> = ({
       
       {children && (
         <div 
-          style={{ marginTop: "10px" }}
+          style={{ marginTop: "6px" }}
           onDragStart={(e) => e.stopPropagation()}
         >
           {children}
@@ -801,17 +791,17 @@ const MainCategoryBlock: React.FC<MainCategoryBlockProps> = ({
   return (
     <div
       style={{
-        padding: "16px 20px",
-        margin: "8px",
-        border: isSelected ? "3px solid #007cba" : dragOver ? "2px dashed #007cba" : "2px solid #e0e0e0",
-        borderRadius: "12px",
+        padding: "10px 12px",
+        margin: "4px",
+        border: isSelected ? "2px solid #007cba" : dragOver ? "2px dashed #007cba" : "1px solid #e0e0e0",
+        borderRadius: "8px",
         background: isDragging ? "#f0f8ff" : isSelected ? "#e6f3ff" : dragOver ? "#f0f8ff" : "#fff",
         cursor: editing ? "text" : "pointer",
         transition: "all 0.2s ease",
-        boxShadow: isSelected ? "0 6px 20px rgba(0,124,186,0.3)" : dragOver ? "0 4px 15px rgba(0,124,186,0.2)" : "0 2px 8px rgba(0,0,0,0.1)",
+        boxShadow: isSelected ? "0 4px 15px rgba(0,124,186,0.3)" : dragOver ? "0 3px 12px rgba(0,124,186,0.2)" : "0 1px 6px rgba(0,0,0,0.1)",
         opacity: isDragging ? 0.5 : 1,
         transform: isDragging ? "rotate(2deg) scale(1.02)" : "none",
-        minWidth: "120px",
+        minWidth: "90px",
         textAlign: "center",
         position: "relative"
       }}
@@ -858,13 +848,6 @@ const MainCategoryBlock: React.FC<MainCategoryBlockProps> = ({
             }}
           >
             {category.industry_name}
-          </div>
-          <div style={{
-            fontSize: "12px",
-            color: "#888",
-            fontStyle: "italic"
-          }}>
-            Main Category
           </div>
         </div>
       )}
@@ -1015,7 +998,7 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
       <div style={{
         background: dragOver ? "#28a745" : "#007cba",
         color: "white",
-        padding: "12px 16px",
+        padding: "8px 12px",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center"
@@ -1039,16 +1022,16 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
             background: "rgba(255,255,255,0.2)",
             color: "white",
             border: "1px solid rgba(255,255,255,0.3)",
-            borderRadius: "4px",
-            padding: "6px 10px",
+            borderRadius: "3px",
+            padding: "4px 8px",
             cursor: "pointer",
-            fontSize: "14px",
+            fontSize: "12px",
             fontWeight: "bold",
-            marginRight: "8px",
+            marginRight: "6px",
             transition: "all 0.2s ease",
             display: "flex",
             alignItems: "center",
-            gap: "4px"
+            gap: "3px"
           }}
           onMouseEnter={(e) => {
             const target = e.target as HTMLButtonElement;
@@ -1071,10 +1054,10 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
             background: "rgba(255,255,255,0.2)",
             color: "white",
             border: "1px solid rgba(255,255,255,0.3)",
-            borderRadius: "4px",
-            padding: "4px 8px",
+            borderRadius: "3px",
+            padding: "3px 6px",
             cursor: "pointer",
-            fontSize: "12px"
+            fontSize: "11px"
           }}
         >
           ✕
@@ -1104,9 +1087,7 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
           }
         }}
         style={{
-          padding: "16px",
-          maxHeight: "400px",
-          overflowY: "auto"
+          padding: "12px"
         }}>
         {tree.length > 0 && tree[0].children && tree[0].children.length > 0 ? (
           <TreeRecursive
@@ -1121,14 +1102,14 @@ const ComparisonPane: React.FC<ComparisonPaneProps> = ({
         ) : (
           <div style={{
             textAlign: "center",
-            padding: "30px 20px",
+            padding: "20px 15px",
             color: "#666",
             background: "#f8f9fa",
-            borderRadius: "8px",
+            borderRadius: "6px",
             border: "2px dashed #ddd"
           }}>
-            <div style={{ fontSize: "24px", marginBottom: "10px", opacity: 0.3 }}>📝</div>
-            <p style={{ marginBottom: "15px", fontSize: "14px" }}>No subcategories yet</p>
+            <div style={{ fontSize: "20px", marginBottom: "8px", opacity: 0.3 }}>📝</div>
+            <p style={{ marginBottom: "12px", fontSize: "13px" }}>No subcategories yet</p>
             <button
               onClick={() => onAddChild(category.id)}
               style={{
@@ -1935,9 +1916,7 @@ const IndustryTree: React.FC<IndustryTreeProps> = ({ selectedIndustryId }) => {
             gridTemplateColumns: selectedCategories.length === 1 ? "1fr" : 
                                selectedCategories.length === 2 ? "1fr 1fr" : 
                                "repeat(3, 1fr)",
-            gap: "20px",
-            maxHeight: "600px",
-            overflowY: "auto"
+            gap: "15px"
           }}>
             {selectedCategories.map((category, index) => {
               const categoryTree = getTreeForCategory(category.id);
