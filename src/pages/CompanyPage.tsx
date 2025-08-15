@@ -76,11 +76,10 @@ const CompanyPage = () => {
       console.log('🔍 Form Data Keys:', Object.keys(formData));
       console.log('🔍 Selected Industries:', formData.selected_industries);
       console.log('🔍 Ratings:', {
-        financial_rating: formData.financial_rating,
-        operational_rating: formData.operational_rating,
-        compliance_rating: formData.compliance_rating,
-        market_rating: formData.market_rating,
-        innovation_rating: formData.innovation_rating
+        company_brand_image: formData.company_brand_image,
+        company_business_volume: formData.company_business_volume,
+        company_financials: formData.company_financials,
+        iisol_relationship: formData.iisol_relationship
       });
       
       // Prepare the data for API submission - send all fields
@@ -107,23 +106,34 @@ const CompanyPage = () => {
         ownership_type: formData.ownership_type,
         global_operations: formData.global_operations,
         founding_year: formData.founding_year || null,
-        established_date: formData.established_date || null,
+        established_day: formData.established_day || null,
+        established_month: formData.established_month || null,
         company_size: formData.company_size,
         ntn_no: formData.ntn_no || null,
+        website: formData.website || null,
         
         // Industries
         selected_industries: formData.selected_industries,
         
         // Ratings
-        financial_rating: formData.financial_rating,
-        operational_rating: formData.operational_rating,
-        compliance_rating: formData.compliance_rating,
-        market_rating: formData.market_rating,
-        innovation_rating: formData.innovation_rating
+        company_brand_image: formData.company_brand_image,
+        company_business_volume: formData.company_business_volume,
+        company_financials: formData.company_financials,
+        iisol_relationship: formData.iisol_relationship
       };
 
       console.log('🚀 TRANSFORMED DATA for backend:', submitData);
       console.log('🚀 Submit Data Keys:', Object.keys(submitData));
+      
+      // Validate required fields
+      if (!submitData.company_group_print_name) {
+        alert('Company Print Name is required');
+        return;
+      }
+      if (!submitData.legal_name) {
+        alert('Legal Name is required');
+        return;
+      }
       
       const response = await apiClient.post('/companies/', submitData);
       
@@ -136,8 +146,27 @@ const CompanyPage = () => {
         setSavedCompanyId(savedCompany.record_id || savedCompany.id);
         setIsSuccessModalOpen(true);
       } else {
-        console.error('Failed to save company:', response.status, response.statusText);
-        alert('Failed to save company. Please try again.');
+        const errorText = await response.text();
+        console.error('❌ API Error Details:', {
+          status: response.status,
+          statusText: response.statusText,
+          response: errorText,
+          url: response.url
+        });
+        
+        let errorMessage = 'Failed to save company. ';
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.detail) {
+            errorMessage += errorJson.detail;
+          } else {
+            errorMessage += errorText;
+          }
+        } catch (e) {
+          errorMessage += `Server error: ${response.status} ${response.statusText}`;
+        }
+        
+        alert(errorMessage);
       }
     } catch (error) {
       console.error('Error saving company:', error);

@@ -20,7 +20,9 @@ interface CompanyData {
   ownership_type: string;
   global_operations: 'Local' | 'National' | 'Multi National';
   founding_year: string;
-  established_date: string;
+  established_day: string;
+  established_month: string;
+  website: string;
   company_size: number;
   ntn_no: string;
   operations: {
@@ -35,11 +37,10 @@ interface CompanyData {
     soft_products: boolean;
   };
   selected_industries: number[];
-  financial_rating: number;
-  operational_rating: number;
-  compliance_rating: number;
-  market_rating: number;
-  innovation_rating: number;
+  company_brand_image: number | null;
+  company_business_volume: number | null;
+  company_financials: number | null;
+  iisol_relationship: number | null;
 }
 
 interface CompanyViewProps {
@@ -125,14 +126,25 @@ const CompanyView: React.FC<CompanyViewProps> = ({
             online: data.online === 'Y',
             soft_products: data.soft_products === 'Y',
           },
-          // Ensure ratings have default values
-          financial_rating: data.financial_rating || 3,
-          operational_rating: data.operational_rating || 3,
-          compliance_rating: data.compliance_rating || 3,
-          market_rating: data.market_rating || 3,
-          innovation_rating: data.innovation_rating || 3,
-          // Ensure selected_industries is an array
-          selected_industries: data.selected_industries || [],
+          // Ensure ratings (can be null if not set)
+          company_brand_image: data.company_brand_image || null,
+          company_business_volume: data.company_business_volume || null,
+          company_financials: data.company_financials || null,
+          iisol_relationship: data.iisol_relationship || null,
+          // Ensure selected_industries is an array (parse JSON string if needed)
+          selected_industries: (() => {
+            if (!data.selected_industries) return [];
+            if (Array.isArray(data.selected_industries)) return data.selected_industries;
+            if (typeof data.selected_industries === 'string') {
+              try {
+                return JSON.parse(data.selected_industries);
+              } catch (e) {
+                console.warn('Failed to parse selected_industries:', data.selected_industries);
+                return [];
+              }
+            }
+            return [];
+          })(),
         };
         
         setCompany(formattedData);
@@ -292,13 +304,17 @@ const CompanyView: React.FC<CompanyViewProps> = ({
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Established</label>
-                <p className="text-sm">{company.established_date || 'Not specified'}</p>
+                <p className="text-sm">
+                  {company.established_day && company.established_month 
+                    ? `${company.established_day}/${company.established_month}` 
+                    : 'Not specified'}
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Company Size</label>
-                <p className="text-sm">{company.company_size}/5</p>
+                <p className="text-sm">{company.company_size ? `${company.company_size}/5` : 'Not specified'}</p>
               </div>
               {company.ntn_no && (
                 <div>
@@ -307,6 +323,21 @@ const CompanyView: React.FC<CompanyViewProps> = ({
                 </div>
               )}
             </div>
+            {company.website && (
+              <div>
+                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Website</label>
+                <p className="text-sm">
+                  <a 
+                    href={company.website} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    {company.website}
+                  </a>
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -367,11 +398,10 @@ const CompanyView: React.FC<CompanyViewProps> = ({
           </h2>
           <div className="space-y-4">
             {[
-              { label: 'Financial Rating', value: company.financial_rating, icon: '💰' },
-              { label: 'Operational Rating', value: company.operational_rating, icon: '⚙️' },
-              { label: 'Compliance Rating', value: company.compliance_rating, icon: '📋' },
-              { label: 'Market Rating', value: company.market_rating, icon: '📈' },
-              { label: 'Innovation Rating', value: company.innovation_rating, icon: '🚀' }
+              { label: 'Brand Image', value: company.company_brand_image, icon: '🏆' },
+              { label: 'Business Volume', value: company.company_business_volume, icon: '📈' },
+              { label: 'Financials', value: company.company_financials, icon: '💰' },
+              { label: 'IISOL Relationship', value: company.iisol_relationship, icon: '🤝' }
             ].map((rating) => (
               <div key={rating.label} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -379,25 +409,31 @@ const CompanyView: React.FC<CompanyViewProps> = ({
                   <span className="text-sm font-medium">{rating.label}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="flex">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <span
-                        key={star}
-                        className={`text-lg ${
-                          star <= rating.value
-                            ? rating.value >= 4 ? 'text-emerald-500'
-                            : rating.value === 3 ? 'text-yellow-500'
-                            : rating.value === 2 ? 'text-gray-500'
-                            : rating.value === 1 ? 'text-orange-500'
-                            : 'text-red-500'
-                            : 'text-gray-300 dark:text-gray-600'
-                        }`}
-                      >
-                        {getRatingIcon(rating.value)}
-                      </span>
-                    ))}
-                  </div>
-                  <span className="text-sm font-medium">{rating.value}/5</span>
+                  {rating.value ? (
+                    <>
+                      <div className="flex">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <span
+                            key={star}
+                            className={`text-lg ${
+                              star <= rating.value
+                                ? rating.value >= 4 ? 'text-emerald-500'
+                                : rating.value === 3 ? 'text-yellow-500'
+                                : rating.value === 2 ? 'text-gray-500'
+                                : rating.value === 1 ? 'text-orange-500'
+                                : 'text-red-500'
+                                : 'text-gray-300 dark:text-gray-600'
+                            }`}
+                          >
+                            {getRatingIcon(rating.value)}
+                          </span>
+                        ))}
+                      </div>
+                      <span className="text-sm font-medium">{rating.value}/5</span>
+                    </>
+                  ) : (
+                    <span className="text-sm text-gray-500 dark:text-gray-400">Not rated</span>
+                  )}
                 </div>
               </div>
             ))}

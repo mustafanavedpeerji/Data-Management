@@ -26,9 +26,11 @@ interface CompanyFormData {
   ownership_type: 'Individual' | 'Sole Proprietorship' | 'Association of Persons' | 'Public Limited Company' | 'Government' | 'Semi Government';
   global_operations: 'Local' | 'National' | 'Multi National';
   founding_year: string;
-  established_date: string;
-  company_size: number; // 1-5 scale
+  established_day: string;
+  established_month: string;
+  company_size: number | null; // 1-5 scale
   ntn_no: string;
+  website: string;
   
   
   // Operations
@@ -47,12 +49,11 @@ interface CompanyFormData {
   // Industries (multi-select)
   selected_industries: number[];
   
-  // Rating Fields (1-5 numeric input)
-  financial_rating: number;
-  operational_rating: number;
-  compliance_rating: number;
-  market_rating: number;
-  innovation_rating: number;
+  // Rating Fields (1-5 numeric input) - User will enter
+  company_brand_image: number | null;
+  company_business_volume: number | null;
+  company_financials: number | null;
+  iisol_relationship: number | null;
 }
 
 interface CompanyAddFormProps {
@@ -79,9 +80,11 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
     ownership_type: 'Individual',
     global_operations: 'Local',
     founding_year: '',
-    established_date: '',
-    company_size: 3,
+    established_day: '',
+    established_month: '',
+    company_size: null,
     ntn_no: '',
+    website: '',
     operations: {
       imports: false,
       exports: false,
@@ -94,11 +97,10 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
       soft_products: false,
     },
     selected_industries: [],
-    financial_rating: 3,
-    operational_rating: 3,
-    compliance_rating: 3,
-    market_rating: 3,
-    innovation_rating: 3,
+    company_brand_image: null,
+    company_business_volume: null,
+    company_financials: null,
+    iisol_relationship: null,
     ...initialData
   });
   
@@ -933,22 +935,49 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[10px] mb-1">Established</label>
+              <label className="block text-[10px] mb-1">Established Day</label>
               <input
-                type="date"
-                value={formData.established_date}
-                onChange={(e) => handleInputChange('established_date', e.target.value)}
+                type="number"
+                value={formData.established_day}
+                onChange={(e) => handleInputChange('established_day', e.target.value)}
                 className={`w-full px-1 py-1 rounded border text-[10px] ${
                   theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                 }`}
+                placeholder="1-31"
+                min="1"
+                max="31"
               />
+            </div>
+            <div>
+              <label className="block text-[10px] mb-1">Established Month</label>
+              <select
+                value={formData.established_month}
+                onChange={(e) => handleInputChange('established_month', e.target.value)}
+                className={`w-full px-1 py-1 rounded border text-[10px] ${
+                  theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
+                }`}
+              >
+                <option value="">Select Month</option>
+                <option value="01">January</option>
+                <option value="02">February</option>
+                <option value="03">March</option>
+                <option value="04">April</option>
+                <option value="05">May</option>
+                <option value="06">June</option>
+                <option value="07">July</option>
+                <option value="08">August</option>
+                <option value="09">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+              </select>
             </div>
             <div>
               <label className="block text-[10px] mb-1">Company Size (1-5)</label>
               <input
                 type="number"
-                value={formData.company_size}
-                onChange={(e) => handleInputChange('company_size', parseInt(e.target.value) || 1)}
+                value={formData.company_size || ''}
+                onChange={(e) => handleInputChange('company_size', e.target.value ? parseInt(e.target.value) : null)}
                 className={`w-full px-1 py-1 rounded border text-[10px] ${
                   theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                 }`}
@@ -967,6 +996,18 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
                   theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                 }`}
                 placeholder="NTN"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] mb-1">Website</label>
+              <input
+                type="url"
+                value={formData.website}
+                onChange={(e) => handleInputChange('website', e.target.value)}
+                className={`w-full px-1 py-1 rounded border text-[10px] ${
+                  theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
+                }`}
+                placeholder="https://example.com"
               />
             </div>
           </div>
@@ -1029,13 +1070,13 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
         {/* Company Assessments - Number Inputs in One Row */}
         <div className={`p-2 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <h3 className="text-xs font-medium mb-1">Company Assessments & Ratings (1-5)</h3>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-4 gap-2">
             <div>
-              <label className="block text-[10px] mb-1">💰 Financial</label>
+              <label className="block text-[10px] mb-1">🏆 Brand Image</label>
               <input
                 type="number"
-                value={formData.financial_rating}
-                onChange={(e) => handleInputChange('financial_rating', parseInt(e.target.value) || 1)}
+                value={formData.company_brand_image || ''}
+                onChange={(e) => handleInputChange('company_brand_image', e.target.value ? parseInt(e.target.value) : null)}
                 className={`w-full px-1 py-1 rounded border text-[10px] ${
                   theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                 }`}
@@ -1045,11 +1086,11 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[10px] mb-1">⚙️ Operational</label>
+              <label className="block text-[10px] mb-1">📈 Business Volume</label>
               <input
                 type="number"
-                value={formData.operational_rating}
-                onChange={(e) => handleInputChange('operational_rating', parseInt(e.target.value) || 1)}
+                value={formData.company_business_volume || ''}
+                onChange={(e) => handleInputChange('company_business_volume', e.target.value ? parseInt(e.target.value) : null)}
                 className={`w-full px-1 py-1 rounded border text-[10px] ${
                   theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                 }`}
@@ -1059,11 +1100,11 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[10px] mb-1">📋 Compliance</label>
+              <label className="block text-[10px] mb-1">💰 Financials</label>
               <input
                 type="number"
-                value={formData.compliance_rating}
-                onChange={(e) => handleInputChange('compliance_rating', parseInt(e.target.value) || 1)}
+                value={formData.company_financials || ''}
+                onChange={(e) => handleInputChange('company_financials', e.target.value ? parseInt(e.target.value) : null)}
                 className={`w-full px-1 py-1 rounded border text-[10px] ${
                   theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                 }`}
@@ -1073,25 +1114,11 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[10px] mb-1">📈 Market</label>
+              <label className="block text-[10px] mb-1">🤝 IISOL Relationship</label>
               <input
                 type="number"
-                value={formData.market_rating}
-                onChange={(e) => handleInputChange('market_rating', parseInt(e.target.value) || 1)}
-                className={`w-full px-1 py-1 rounded border text-[10px] ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
-                }`}
-                min="1"
-                max="5"
-                placeholder="1-5"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] mb-1">🚀 Innovation</label>
-              <input
-                type="number"
-                value={formData.innovation_rating}
-                onChange={(e) => handleInputChange('innovation_rating', parseInt(e.target.value) || 1)}
+                value={formData.iisol_relationship || ''}
+                onChange={(e) => handleInputChange('iisol_relationship', e.target.value ? parseInt(e.target.value) : null)}
                 className={`w-full px-1 py-1 rounded border text-[10px] ${
                   theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                 }`}
