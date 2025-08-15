@@ -20,6 +20,8 @@ import { ScrollToTop } from "./components/common/ScrollToTop";
 import Home from "./pages/Dashboard/Home";
 import IndustryPage from './pages/IndustryPage';
 import CompanyPage from "./pages/CompanyPage";
+import CompanyViewPage from "./pages/CompanyViewPage";
+import CompanyListPage from "./pages/CompanyListPage";
 
 export default function App() {
   return (
@@ -32,6 +34,8 @@ export default function App() {
 
             <Route path="/industry" element={<IndustryPage />} />
             <Route path="/company" element={<CompanyPage />} />
+            <Route path="/company/view/:id" element={<CompanyViewPage />} />
+            <Route path="/company-view" element={<CompanyListPage />} />
 
             <Route index path="/" element={<Home />} />
 

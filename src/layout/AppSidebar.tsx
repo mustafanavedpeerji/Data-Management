@@ -32,6 +32,11 @@ const navItems: NavItem[] = [
   path: "/company", // yeh route tumhare IndustryPage.tsx ke liye
   },
   {
+  icon: <GridIcon />, // ya koi aur icon jo pasand ho
+  name: "Company View",
+  path: "/company-view", // yeh route tumhare CompanyListPage.tsx ke liye
+  },
+  {
   icon: <BoxCubeIcon />, // ya koi aur icon jo pasand ho
   name: "Industry",
   path: "/industry", // yeh route tumhare IndustryPage.tsx ke liye
