@@ -797,7 +797,11 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
             formData.company_group_data_type === 'Group' ? 'grid-cols-3' : 'grid-cols-4'
           }`}>
             <div>
-              <label className="block text-[10px] mb-1">Company Print Name *</label>
+              <label className="block text-[10px] mb-1">
+                {formData.company_group_data_type === 'Group' ? 'Group Print Name *' : 
+                 formData.company_group_data_type === 'Division' ? 'Division Print Name *' : 
+                 'Company Print Name *'}
+              </label>
               <input
                 type="text"
                 value={formData.company_group_print_name}
@@ -873,7 +877,9 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
         {/* Status & Details - One Row */}
         <div className={`p-2 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <h3 className="text-xs font-medium mb-1">Status & Details</h3>
-          <div className="grid grid-cols-7 gap-2">
+          <div className={`grid gap-2 ${
+            formData.company_group_data_type === 'Company' ? 'grid-cols-7' : 'grid-cols-1'
+          }`}>
             <div>
               <label className="block text-[10px] mb-1">Living Status</label>
               <select
@@ -889,132 +895,139 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
                 <option value="In Process">In Process</option>
               </select>
             </div>
-            <div>
-              <label className="block text-[10px] mb-1">Ownership</label>
-              <select
-                value={formData.ownership_type}
-                onChange={(e) => handleInputChange('ownership_type', e.target.value)}
-                className={`w-full px-1 py-1 rounded border text-[10px] ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
-                }`}
-              >
-                <option value="Individual">Individual</option>
-                <option value="Sole Proprietorship">Sole Prop.</option>
-                <option value="Association of Persons">AOP</option>
-                <option value="Public Limited Company">Public Ltd</option>
-                <option value="Government">Govt</option>
-                <option value="Semi Government">Semi Govt</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[10px] mb-1">Global Ops</label>
-              <select
-                value={formData.global_operations}
-                onChange={(e) => handleInputChange('global_operations', e.target.value)}
-                className={`w-full px-1 py-1 rounded border text-[10px] ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
-                }`}
-              >
-                <option value="Local">Local</option>
-                <option value="National">National</option>
-                <option value="Multi National">Multi National</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[10px] mb-1">Founded Year</label>
-              <input
-                type="number"
-                value={formData.founding_year}
-                onChange={(e) => handleInputChange('founding_year', e.target.value)}
-                className={`w-full px-1 py-1 rounded border text-[10px] ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
-                }`}
-                placeholder="2020"
-                min="1800"
-                max={new Date().getFullYear()}
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] mb-1">Established Day</label>
-              <input
-                type="number"
-                value={formData.established_day}
-                onChange={(e) => handleInputChange('established_day', e.target.value)}
-                className={`w-full px-1 py-1 rounded border text-[10px] ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
-                }`}
-                placeholder="1-31"
-                min="1"
-                max="31"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] mb-1">Established Month</label>
-              <select
-                value={formData.established_month}
-                onChange={(e) => handleInputChange('established_month', e.target.value)}
-                className={`w-full px-1 py-1 rounded border text-[10px] ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
-                }`}
-              >
-                <option value="">Select Month</option>
-                <option value="01">January</option>
-                <option value="02">February</option>
-                <option value="03">March</option>
-                <option value="04">April</option>
-                <option value="05">May</option>
-                <option value="06">June</option>
-                <option value="07">July</option>
-                <option value="08">August</option>
-                <option value="09">September</option>
-                <option value="10">October</option>
-                <option value="11">November</option>
-                <option value="12">December</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[10px] mb-1">Company Size (1-5)</label>
-              <input
-                type="number"
-                value={formData.company_size || ''}
-                onChange={(e) => handleInputChange('company_size', e.target.value ? parseInt(e.target.value) : null)}
-                className={`w-full px-1 py-1 rounded border text-[10px] ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
-                }`}
-                min="1"
-                max="5"
-                placeholder="1-5"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] mb-1">NTN Number</label>
-              <input
-                type="text"
-                value={formData.ntn_no}
-                onChange={(e) => handleInputChange('ntn_no', e.target.value)}
-                className={`w-full px-1 py-1 rounded border text-[10px] ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
-                }`}
-                placeholder="NTN"
-              />
-            </div>
-            <div>
-              <label className="block text-[10px] mb-1">Website</label>
-              <input
-                type="url"
-                value={formData.website}
-                onChange={(e) => handleInputChange('website', e.target.value)}
-                className={`w-full px-1 py-1 rounded border text-[10px] ${
-                  theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
-                }`}
-                placeholder="https://example.com"
-              />
-            </div>
+            {formData.company_group_data_type === 'Company' && (
+              <>
+                <div>
+                  <label className="block text-[10px] mb-1">Ownership</label>
+                  <select
+                    value={formData.ownership_type}
+                    onChange={(e) => handleInputChange('ownership_type', e.target.value)}
+                    className={`w-full px-1 py-1 rounded border text-[10px] ${
+                      theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
+                    }`}
+                  >
+                    <option value="Individual">Individual</option>
+                    <option value="Sole Proprietorship">Sole Prop.</option>
+                    <option value="Association of Persons">AOP</option>
+                    <option value="Public Limited Company">Public Ltd</option>
+                    <option value="Government">Govt</option>
+                    <option value="Semi Government">Semi Govt</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] mb-1">Global Ops</label>
+                  <select
+                    value={formData.global_operations}
+                    onChange={(e) => handleInputChange('global_operations', e.target.value)}
+                    className={`w-full px-1 py-1 rounded border text-[10px] ${
+                      theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
+                    }`}
+                  >
+                    <option value="Local">Local</option>
+                    <option value="National">National</option>
+                    <option value="Multi National">Multi National</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] mb-1">Founded Year</label>
+                  <input
+                    type="number"
+                    value={formData.founding_year}
+                    onChange={(e) => handleInputChange('founding_year', e.target.value)}
+                    className={`w-full px-1 py-1 rounded border text-[10px] ${
+                      theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
+                    }`}
+                    placeholder="2020"
+                    min="1800"
+                    max={new Date().getFullYear()}
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] mb-1">Established Day</label>
+                  <input
+                    type="number"
+                    value={formData.established_day}
+                    onChange={(e) => handleInputChange('established_day', e.target.value)}
+                    className={`w-full px-1 py-1 rounded border text-[10px] ${
+                      theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
+                    }`}
+                    placeholder="1-31"
+                    min="1"
+                    max="31"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] mb-1">Established Month</label>
+                  <select
+                    value={formData.established_month}
+                    onChange={(e) => handleInputChange('established_month', e.target.value)}
+                    className={`w-full px-1 py-1 rounded border text-[10px] ${
+                      theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
+                    }`}
+                  >
+                    <option value="">Select Month</option>
+                    <option value="01">January</option>
+                    <option value="02">February</option>
+                    <option value="03">March</option>
+                    <option value="04">April</option>
+                    <option value="05">May</option>
+                    <option value="06">June</option>
+                    <option value="07">July</option>
+                    <option value="08">August</option>
+                    <option value="09">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[10px] mb-1">Company Size (1-5)</label>
+                  <input
+                    type="number"
+                    value={formData.company_size || ''}
+                    onChange={(e) => handleInputChange('company_size', e.target.value ? parseInt(e.target.value) : null)}
+                    className={`w-full px-1 py-1 rounded border text-[10px] ${
+                      theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
+                    }`}
+                    min="1"
+                    max="5"
+                    placeholder="1-5"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] mb-1">NTN Number</label>
+                  <input
+                    type="text"
+                    value={formData.ntn_no}
+                    onChange={(e) => handleInputChange('ntn_no', e.target.value)}
+                    className={`w-full px-1 py-1 rounded border text-[10px] ${
+                      theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
+                    }`}
+                    placeholder="NTN"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] mb-1">Website</label>
+                  <input
+                    type="url"
+                    value={formData.website}
+                    onChange={(e) => handleInputChange('website', e.target.value)}
+                    className={`w-full px-1 py-1 rounded border text-[10px] ${
+                      theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
+                    }`}
+                    placeholder="https://example.com"
+                  />
+                </div>
+              </>
+            )}
           </div>
         </div>
 
 
-        {/* Business Operations - Checkboxes in One Row */}
+        {/* Show additional sections only for Company type */}
+        {formData.company_group_data_type === 'Company' && (
+          <>
+            {/* Business Operations - Checkboxes in One Row */}
         <div className={`p-2 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <h3 className="text-xs font-medium mb-1">Business Operations</h3>
           <div className="flex gap-2 flex-wrap">
@@ -1130,6 +1143,9 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
           </div>
         </div>
 
+          </>
+        )}
+
         {/* Form Actions - Bottom */}
         <div className="flex justify-end gap-3 pt-4">
           {onCancel && (
@@ -1150,7 +1166,7 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
             disabled={loading}
             className="px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium rounded-lg transition-colors text-sm disabled:opacity-50"
           >
-            {loading ? 'Saving...' : 'Save Company'}
+            {loading ? 'Saving...' : `Save ${formData.company_group_data_type}`}
           </button>
         </div>
       </form>

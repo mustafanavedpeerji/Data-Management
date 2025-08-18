@@ -229,104 +229,94 @@ const CompanyView: React.FC<CompanyViewProps> = ({
 
   try {
     return (
-      <div className={`w-full max-w-6xl mx-auto p-6 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
+      <div className={`w-full max-w-6xl mx-auto p-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="text-2xl">
-                {company.company_group_data_type === 'Group' ? '🏭' : 
-                 company.company_group_data_type === 'Company' ? '🏢' : '🏪'}
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">{company.company_group_print_name || 'Company Name'}</h1>
-                <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                  {company.company_group_data_type || 'Company'} • {company.living_status || 'Active'}
-                </p>
-              </div>
-            </div>
+            <h1 className="text-lg font-semibold">{company.company_group_print_name || 'Company Name'}</h1>
+            <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+              {company.company_group_data_type || 'Company'} • {company.living_status || 'Active'}
+            </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2">
             {onBack && (
               <button
                 onClick={onBack}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
                   theme === 'dark'
                     ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               >
-                ← Back
+                Back
               </button>
             )}
             {onEdit && (
               <button
                 onClick={onEdit}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                className="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs font-medium"
               >
-                Edit Company
+                Edit
               </button>
             )}
           </div>
         </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Basic Information */}
-        <div className={`p-6 rounded-lg border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <span>📋</span> Basic Information
-          </h2>
-          <div className="space-y-3">
+        <div className={`p-3 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <h2 className="text-sm font-medium mb-3">Basic Information</h2>
+          <div className="space-y-2">
             <div>
-              <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Legal Name</label>
-              <p className="text-sm">{company.legal_name}</p>
+              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Legal Name</label>
+              <p className="text-xs">{company.legal_name}</p>
             </div>
             {company.other_names && (
               <div>
-                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Other Names</label>
-                <p className="text-sm">{company.other_names}</p>
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Other Names</label>
+                <p className="text-xs">{company.other_names}</p>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Ownership Type</label>
-                <p className="text-sm">{company.ownership_type}</p>
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Ownership Type</label>
+                <p className="text-xs">{company.ownership_type}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Global Operations</label>
-                <p className="text-sm">{company.global_operations}</p>
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Global Operations</label>
+                <p className="text-xs">{company.global_operations}</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Founded</label>
-                <p className="text-sm">{company.founding_year || 'Not specified'}</p>
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Founded</label>
+                <p className="text-xs">{company.founding_year || 'Not specified'}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Established</label>
-                <p className="text-sm">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Established</label>
+                <p className="text-xs">
                   {company.established_day && company.established_month 
                     ? `${company.established_day}/${company.established_month}` 
                     : 'Not specified'}
                 </p>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Company Size</label>
-                <p className="text-sm">{company.company_size ? `${company.company_size}/5` : 'Not specified'}</p>
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Company Size</label>
+                <p className="text-xs">{company.company_size ? `${company.company_size}/5` : 'Not specified'}</p>
               </div>
               {company.ntn_no && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500 dark:text-gray-400">NTN Number</label>
-                  <p className="text-sm">{company.ntn_no}</p>
+                  <label className="text-xs font-medium text-gray-500 dark:text-gray-400">NTN Number</label>
+                  <p className="text-xs">{company.ntn_no}</p>
                 </div>
               )}
             </div>
             {company.website && (
               <div>
-                <label className="text-sm font-medium text-gray-500 dark:text-gray-400">Website</label>
-                <p className="text-sm">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Website</label>
+                <p className="text-xs">
                   <a 
                     href={company.website} 
                     target="_blank" 
@@ -342,19 +332,17 @@ const CompanyView: React.FC<CompanyViewProps> = ({
         </div>
 
         {/* Business Operations */}
-        <div className={`p-6 rounded-lg border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <span>⚙️</span> Business Operations
-          </h2>
+        <div className={`p-3 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <h2 className="text-sm font-medium mb-3">Business Operations</h2>
           {getOperations().length > 0 ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1">
               {getOperations().map((operation, index) => (
                 <span
                   key={index}
-                  className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  className={`px-2 py-1 rounded text-xs ${
                     theme === 'dark'
-                      ? 'bg-blue-900/50 text-blue-200 border border-blue-700'
-                      : 'bg-blue-100 text-blue-800 border border-blue-200'
+                      ? 'bg-gray-700 text-gray-300'
+                      : 'bg-gray-100 text-gray-700'
                   }`}
                 >
                   {operation}
@@ -362,24 +350,22 @@ const CompanyView: React.FC<CompanyViewProps> = ({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400">No operations specified</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">No operations specified</p>
           )}
         </div>
 
         {/* Industries */}
-        <div className={`p-6 rounded-lg border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <span>🏭</span> Industries ({company.selected_industries.length})
-          </h2>
+        <div className={`p-3 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <h2 className="text-sm font-medium mb-3">Industries ({company.selected_industries.length})</h2>
           {company.selected_industries.length > 0 ? (
-            <div className="space-y-2 max-h-40 overflow-y-auto">
+            <div className="space-y-1 max-h-32 overflow-y-auto">
               {company.selected_industries.map((industryId) => (
                 <div
                   key={industryId}
-                  className={`px-3 py-2 rounded border text-sm ${
+                  className={`px-2 py-1 rounded text-xs ${
                     theme === 'dark'
-                      ? 'bg-gray-700 border-gray-600 text-gray-200'
-                      : 'bg-gray-50 border-gray-200 text-gray-800'
+                      ? 'bg-gray-700 text-gray-300'
+                      : 'bg-gray-100 text-gray-700'
                   }`}
                 >
                   {getIndustryName(industryId)}
@@ -387,54 +373,25 @@ const CompanyView: React.FC<CompanyViewProps> = ({
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400">No industries selected</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">No industries selected</p>
           )}
         </div>
 
         {/* Ratings & Assessments */}
-        <div className={`p-6 rounded-lg border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-            <span>📊</span> Ratings & Assessments
-          </h2>
-          <div className="space-y-4">
+        <div className={`p-3 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+          <h2 className="text-sm font-medium mb-3">Ratings & Assessments</h2>
+          <div className="space-y-2">
             {[
-              { label: 'Brand Image', value: company.company_brand_image, icon: '🏆' },
-              { label: 'Business Volume', value: company.company_business_volume, icon: '📈' },
-              { label: 'Financials', value: company.company_financials, icon: '💰' },
-              { label: 'IISOL Relationship', value: company.iisol_relationship, icon: '🤝' }
+              { label: 'Brand Image', value: company.company_brand_image },
+              { label: 'Business Volume', value: company.company_business_volume },
+              { label: 'Financials', value: company.company_financials },
+              { label: 'IISOL Relationship', value: company.iisol_relationship }
             ].map((rating) => (
               <div key={rating.label} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span>{rating.icon}</span>
-                  <span className="text-sm font-medium">{rating.label}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {rating.value ? (
-                    <>
-                      <div className="flex">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <span
-                            key={star}
-                            className={`text-lg ${
-                              star <= rating.value
-                                ? rating.value >= 4 ? 'text-emerald-500'
-                                : rating.value === 3 ? 'text-yellow-500'
-                                : rating.value === 2 ? 'text-gray-500'
-                                : rating.value === 1 ? 'text-orange-500'
-                                : 'text-red-500'
-                                : 'text-gray-300 dark:text-gray-600'
-                            }`}
-                          >
-                            {getRatingIcon(rating.value)}
-                          </span>
-                        ))}
-                      </div>
-                      <span className="text-sm font-medium">{rating.value}/5</span>
-                    </>
-                  ) : (
-                    <span className="text-sm text-gray-500 dark:text-gray-400">Not rated</span>
-                  )}
-                </div>
+                <span className="text-xs font-medium">{rating.label}</span>
+                <span className="text-xs">
+                  {rating.value ? `${rating.value}/5` : 'Not rated'}
+                </span>
               </div>
             ))}
           </div>
