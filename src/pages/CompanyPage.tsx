@@ -6,10 +6,11 @@ import apiClient from "../config/apiClient";
 import { useTheme } from "../context/ThemeContext";
 
 // Success Modal Component
-const SuccessModal: React.FC<{ isOpen: boolean; onClose: () => void; companyName: string }> = ({ 
+const SuccessModal: React.FC<{ isOpen: boolean; onClose: () => void; companyName: string; entityType?: string }> = ({ 
   isOpen, 
   onClose, 
-  companyName 
+  companyName,
+  entityType = 'Company'
 }) => {
   const { theme } = useTheme();
 
@@ -37,7 +38,7 @@ const SuccessModal: React.FC<{ isOpen: boolean; onClose: () => void; companyName
             text-lg font-semibold mb-3
             ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}
           `}>
-            Company Created Successfully!
+            {entityType} Created Successfully!
           </h3>
           
           <p className={`
@@ -69,6 +70,7 @@ const CompanyPage = () => {
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [savedCompanyName, setSavedCompanyName] = useState('');
   const [savedCompanyId, setSavedCompanyId] = useState<string | null>(null);
+  const [savedEntityType, setSavedEntityType] = useState<string>('Company');
 
   const handleFormSubmit = async (formData: any) => {
     try {
@@ -82,52 +84,66 @@ const CompanyPage = () => {
         iisol_relationship: formData.iisol_relationship
       });
       
-      // Prepare the data for API submission - send all fields
-      const submitData = {
-        company_group_print_name: formData.company_group_print_name,
-        company_group_data_type: formData.company_group_data_type,
-        parent_id: formData.parent_id ? parseInt(formData.parent_id) : null,
+      // Prepare the data for API submission with correct field names for each entity type
+      const submitData: any = {
         legal_name: formData.legal_name || null,
         other_names: formData.other_names || null,
+        parent_id: formData.parent_id ? parseInt(formData.parent_id) : null,
+        living_status: formData.living_status,
+      };
+
+      // Set the correct name field based on entity type
+      if (formData.company_group_data_type === 'Group') {
+        submitData.group_print_name = formData.company_group_print_name;
+      } else if (formData.company_group_data_type === 'Division') {
+        submitData.division_print_name = formData.company_group_print_name;
+        // Divisions also need parent_type
+        if (submitData.parent_id) {
+          submitData.parent_type = 'Group'; // Default to Group for now
+        }
+      } else {
+        // Company - add all company-specific fields
+        submitData.company_group_print_name = formData.company_group_print_name;
+        submitData.company_group_data_type = formData.company_group_data_type;
         
         // Convert operations boolean to "Y"/"N" format
-        imports: formData.operations?.imports ? "Y" : "N",
-        exports: formData.operations?.exports ? "Y" : "N", 
-        manufacture: formData.operations?.manufacture ? "Y" : "N",
-        distribution: formData.operations?.distribution ? "Y" : "N",
-        wholesale: formData.operations?.wholesale ? "Y" : "N",
-        retail: formData.operations?.retail ? "Y" : "N",
-        services: formData.operations?.services ? "Y" : "N",
-        online: formData.operations?.online ? "Y" : "N",
-        soft_products: formData.operations?.soft_products ? "Y" : "N",
+        submitData.imports = formData.operations?.imports ? "Y" : "N";
+        submitData.exports = formData.operations?.exports ? "Y" : "N";
+        submitData.manufacture = formData.operations?.manufacture ? "Y" : "N";
+        submitData.distribution = formData.operations?.distribution ? "Y" : "N";
+        submitData.wholesale = formData.operations?.wholesale ? "Y" : "N";
+        submitData.retail = formData.operations?.retail ? "Y" : "N";
+        submitData.services = formData.operations?.services ? "Y" : "N";
+        submitData.online = formData.operations?.online ? "Y" : "N";
+        submitData.soft_products = formData.operations?.soft_products ? "Y" : "N";
         
         // Additional company details
-        living_status: formData.living_status,
-        ownership_type: formData.ownership_type,
-        global_operations: formData.global_operations,
-        founding_year: formData.founding_year || null,
-        established_day: formData.established_day || null,
-        established_month: formData.established_month || null,
-        company_size: formData.company_size,
-        ntn_no: formData.ntn_no || null,
-        website: formData.website || null,
+        submitData.ownership_type = formData.ownership_type;
+        submitData.global_operations = formData.global_operations;
+        submitData.founding_year = formData.founding_year || null;
+        submitData.established_day = formData.established_day || null;
+        submitData.established_month = formData.established_month || null;
+        submitData.company_size = formData.company_size;
+        submitData.ntn_no = formData.ntn_no || null;
+        submitData.website = formData.website || null;
         
         // Industries
-        selected_industries: formData.selected_industries,
+        submitData.selected_industries = formData.selected_industries;
         
         // Ratings
-        company_brand_image: formData.company_brand_image,
-        company_business_volume: formData.company_business_volume,
-        company_financials: formData.company_financials,
-        iisol_relationship: formData.iisol_relationship
-      };
+        submitData.company_brand_image = formData.company_brand_image;
+        submitData.company_business_volume = formData.company_business_volume;
+        submitData.company_financials = formData.company_financials;
+        submitData.iisol_relationship = formData.iisol_relationship;
+      }
 
       console.log('🚀 TRANSFORMED DATA for backend:', submitData);
       console.log('🚀 Submit Data Keys:', Object.keys(submitData));
       
       // Validate required fields
-      if (!submitData.company_group_print_name) {
-        alert('Company Print Name is required');
+      const printName = submitData.company_group_print_name || submitData.group_print_name || submitData.division_print_name;
+      if (!printName) {
+        alert(`${formData.company_group_data_type} Print Name is required`);
         return;
       }
       if (!submitData.legal_name) {
@@ -155,11 +171,12 @@ const CompanyPage = () => {
       
       if (response.ok) {
         const savedCompany = await response.json();
-        console.log('Company saved successfully:', savedCompany);
+        console.log(`${formData.company_group_data_type} saved successfully:`, savedCompany);
         
         // Show success modal
         setSavedCompanyName(formData.company_group_print_name);
         setSavedCompanyId(savedCompany.record_id || savedCompany.id);
+        setSavedEntityType(formData.company_group_data_type);
         setIsSuccessModalOpen(true);
       } else {
         const errorText = await response.text();
@@ -170,7 +187,7 @@ const CompanyPage = () => {
           url: response.url
         });
         
-        let errorMessage = 'Failed to save company. ';
+        let errorMessage = `Failed to save ${formData.company_group_data_type.toLowerCase()}. `;
         try {
           const errorJson = JSON.parse(errorText);
           if (errorJson.detail) {
@@ -185,8 +202,8 @@ const CompanyPage = () => {
         alert(errorMessage);
       }
     } catch (error) {
-      console.error('Error saving company:', error);
-      alert('An error occurred while saving the company. Please try again.');
+      console.error(`Error saving ${formData.company_group_data_type.toLowerCase()}:`, error);
+      alert(`An error occurred while saving the ${formData.company_group_data_type.toLowerCase()}. Please try again.`);
     }
   };
 
@@ -220,6 +237,7 @@ const CompanyPage = () => {
         isOpen={isSuccessModalOpen}
         onClose={handleSuccessModalClose}
         companyName={savedCompanyName}
+        entityType={savedEntityType}
       />
     </>
   );
