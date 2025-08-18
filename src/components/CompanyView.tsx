@@ -86,27 +86,47 @@ const CompanyView: React.FC<CompanyViewProps> = ({
     
     setLoading(true);
     try {
-      console.log('Loading company data for ID:', companyId);
+      console.log('Loading entity data for ID:', companyId);
       
-      // Try multiple endpoints to find the company data
+      // Try all three endpoint types to find the entity data
       let response;
       let data;
+      let entityType;
       
-      try {
-        // Try individual company endpoint first
-        response = await apiClient.get(`/companies/${companyId}`);
-        if (response.ok) {
-          data = await response.json();
-          console.log('Company data loaded from individual endpoint:', data);
-        }
-      } catch (error) {
-        console.log('Individual endpoint failed, trying companies list...');
-        // If that fails, try getting from companies list
-        response = await apiClient.get('/companies/');
-        if (response.ok) {
-          const allCompanies = await response.json();
-          data = allCompanies.find((c: Company) => c.record_id === companyId);
-          console.log('Company data found in companies list:', data);
+      // Define endpoints to try in order
+      const endpoints = [
+        { url: `/companies/${companyId}`, type: 'Company', listUrl: '/companies/' },
+        { url: `/groups/${companyId}`, type: 'Group', listUrl: '/groups/' },
+        { url: `/divisions/${companyId}`, type: 'Division', listUrl: '/divisions/' }
+      ];
+      
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`Trying ${endpoint.type} endpoint: ${endpoint.url}`);
+          response = await apiClient.get(endpoint.url);
+          if (response.ok) {
+            data = await response.json();
+            entityType = endpoint.type;
+            console.log(`${endpoint.type} data loaded from individual endpoint:`, data);
+            break;
+          }
+        } catch (error) {
+          console.log(`${endpoint.type} individual endpoint failed, trying ${endpoint.type} list...`);
+          try {
+            // If individual endpoint fails, try the list endpoint
+            response = await apiClient.get(endpoint.listUrl);
+            if (response.ok) {
+              const allEntities = await response.json();
+              data = allEntities.find((entity: any) => entity.record_id === companyId);
+              if (data) {
+                entityType = endpoint.type;
+                console.log(`${endpoint.type} data found in list:`, data);
+                break;
+              }
+            }
+          } catch (listError) {
+            console.log(`${endpoint.type} list endpoint also failed:`, listError);
+          }
         }
       }
       
@@ -114,6 +134,8 @@ const CompanyView: React.FC<CompanyViewProps> = ({
         // Ensure data structure compatibility
         const formattedData = {
           ...data,
+          // Ensure entity type is set correctly
+          company_group_data_type: data.company_group_data_type || entityType,
           // Convert operations from Y/N to boolean if needed
           operations: data.operations || {
             imports: data.imports === 'Y',
@@ -149,8 +171,9 @@ const CompanyView: React.FC<CompanyViewProps> = ({
         
         setCompany(formattedData);
         setError('');
+        console.log(`✅ Successfully loaded ${entityType} with ID: ${companyId}`);
       } else {
-        setError('Company not found');
+        setError('Entity not found');
       }
     } catch (error) {
       setError('Failed to load company data');
@@ -277,125 +300,135 @@ const CompanyView: React.FC<CompanyViewProps> = ({
                 <p className="text-xs">{company.other_names}</p>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Ownership Type</label>
-                <p className="text-xs">{company.ownership_type}</p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Global Operations</label>
-                <p className="text-xs">{company.global_operations}</p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Founded</label>
-                <p className="text-xs">{company.founding_year || 'Not specified'}</p>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Established</label>
-                <p className="text-xs">
-                  {company.established_day && company.established_month 
-                    ? `${company.established_day}/${company.established_month}` 
-                    : 'Not specified'}
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Company Size</label>
-                <p className="text-xs">{company.company_size ? `${company.company_size}/5` : 'Not specified'}</p>
-              </div>
-              {company.ntn_no && (
-                <div>
-                  <label className="text-xs font-medium text-gray-500 dark:text-gray-400">NTN Number</label>
-                  <p className="text-xs">{company.ntn_no}</p>
+            {/* Show company-specific fields only for companies */}
+            {company.company_group_data_type === 'Company' && (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Ownership Type</label>
+                    <p className="text-xs">{company.ownership_type}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Global Operations</label>
+                    <p className="text-xs">{company.global_operations}</p>
+                  </div>
                 </div>
-              )}
-            </div>
-            {company.website && (
-              <div>
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Website</label>
-                <p className="text-xs">
-                  <a 
-                    href={company.website} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-600 dark:text-blue-400 hover:underline"
-                  >
-                    {company.website}
-                  </a>
-                </p>
-              </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Founded</label>
+                    <p className="text-xs">{company.founding_year || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Established</label>
+                    <p className="text-xs">
+                      {company.established_day && company.established_month 
+                        ? `${company.established_day}/${company.established_month}` 
+                        : 'Not specified'}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Company Size</label>
+                    <p className="text-xs">{company.company_size ? `${company.company_size}/5` : 'Not specified'}</p>
+                  </div>
+                  {company.ntn_no && (
+                    <div>
+                      <label className="text-xs font-medium text-gray-500 dark:text-gray-400">NTN Number</label>
+                      <p className="text-xs">{company.ntn_no}</p>
+                    </div>
+                  )}
+                </div>
+                {company.website && (
+                  <div>
+                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Website</label>
+                    <p className="text-xs">
+                      <a 
+                        href={company.website} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-600 dark:text-blue-400 hover:underline"
+                      >
+                        {company.website}
+                      </a>
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
 
-        {/* Business Operations */}
-        <div className={`p-3 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <h2 className="text-sm font-medium mb-3">Business Operations</h2>
-          {getOperations().length > 0 ? (
-            <div className="flex flex-wrap gap-1">
-              {getOperations().map((operation, index) => (
-                <span
-                  key={index}
-                  className={`px-2 py-1 rounded text-xs ${
-                    theme === 'dark'
-                      ? 'bg-gray-700 text-gray-300'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  {operation}
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-gray-500 dark:text-gray-400">No operations specified</p>
-          )}
-        </div>
-
-        {/* Industries */}
-        <div className={`p-3 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <h2 className="text-sm font-medium mb-3">Industries ({company.selected_industries.length})</h2>
-          {company.selected_industries.length > 0 ? (
-            <div className="space-y-1 max-h-32 overflow-y-auto">
-              {company.selected_industries.map((industryId) => (
-                <div
-                  key={industryId}
-                  className={`px-2 py-1 rounded text-xs ${
-                    theme === 'dark'
-                      ? 'bg-gray-700 text-gray-300'
-                      : 'bg-gray-100 text-gray-700'
-                  }`}
-                >
-                  {getIndustryName(industryId)}
+        {/* Show company-specific sections only for companies */}
+        {company.company_group_data_type === 'Company' && (
+          <>
+            {/* Business Operations */}
+            <div className={`p-3 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+              <h2 className="text-sm font-medium mb-3">Business Operations</h2>
+              {getOperations().length > 0 ? (
+                <div className="flex flex-wrap gap-1">
+                  {getOperations().map((operation, index) => (
+                    <span
+                      key={index}
+                      className={`px-2 py-1 rounded text-xs ${
+                        theme === 'dark'
+                          ? 'bg-gray-700 text-gray-300'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {operation}
+                    </span>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <p className="text-xs text-gray-500 dark:text-gray-400">No operations specified</p>
+              )}
             </div>
-          ) : (
-            <p className="text-xs text-gray-500 dark:text-gray-400">No industries selected</p>
-          )}
-        </div>
 
-        {/* Ratings & Assessments */}
-        <div className={`p-3 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <h2 className="text-sm font-medium mb-3">Ratings & Assessments</h2>
-          <div className="space-y-2">
-            {[
-              { label: 'Brand Image', value: company.company_brand_image },
-              { label: 'Business Volume', value: company.company_business_volume },
-              { label: 'Financials', value: company.company_financials },
-              { label: 'IISOL Relationship', value: company.iisol_relationship }
-            ].map((rating) => (
-              <div key={rating.label} className="flex items-center justify-between">
-                <span className="text-xs font-medium">{rating.label}</span>
-                <span className="text-xs">
-                  {rating.value ? `${rating.value}/5` : 'Not rated'}
-                </span>
+            {/* Industries */}
+            <div className={`p-3 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+              <h2 className="text-sm font-medium mb-3">Industries ({company.selected_industries.length})</h2>
+              {company.selected_industries.length > 0 ? (
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {company.selected_industries.map((industryId) => (
+                    <div
+                      key={industryId}
+                      className={`px-2 py-1 rounded text-xs ${
+                        theme === 'dark'
+                          ? 'bg-gray-700 text-gray-300'
+                          : 'bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {getIndustryName(industryId)}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-500 dark:text-gray-400">No industries selected</p>
+              )}
+            </div>
+
+            {/* Ratings & Assessments */}
+            <div className={`p-3 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+              <h2 className="text-sm font-medium mb-3">Ratings & Assessments</h2>
+              <div className="space-y-2">
+                {[
+                  { label: 'Brand Image', value: company.company_brand_image },
+                  { label: 'Business Volume', value: company.company_business_volume },
+                  { label: 'Financials', value: company.company_financials },
+                  { label: 'IISOL Relationship', value: company.iisol_relationship }
+                ].map((rating) => (
+                  <div key={rating.label} className="flex items-center justify-between">
+                    <span className="text-xs font-medium">{rating.label}</span>
+                    <span className="text-xs">
+                      {rating.value ? `${rating.value}/5` : 'Not rated'}
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

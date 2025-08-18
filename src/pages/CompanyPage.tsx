@@ -135,7 +135,23 @@ const CompanyPage = () => {
         return;
       }
       
-      const response = await apiClient.post('/companies/', submitData);
+      // Route to the correct API endpoint based on entity type
+      let apiEndpoint;
+      switch (formData.company_group_data_type) {
+        case 'Group':
+          apiEndpoint = '/groups/';
+          break;
+        case 'Division':
+          apiEndpoint = '/divisions/';
+          break;
+        case 'Company':
+        default:
+          apiEndpoint = '/companies/';
+          break;
+      }
+
+      console.log(`🚀 Submitting ${formData.company_group_data_type} to endpoint: ${apiEndpoint}`);
+      const response = await apiClient.post(apiEndpoint, submitData);
       
       if (response.ok) {
         const savedCompany = await response.json();
