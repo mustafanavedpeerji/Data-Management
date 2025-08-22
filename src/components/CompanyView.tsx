@@ -282,196 +282,362 @@ const CompanyView: React.FC<CompanyViewProps> = ({
     );
   }
 
+  const getStatusColor = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'active':
+        return 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400';
+      case 'inactive':
+        return 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400';
+      case 'dormant':
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+    }
+  };
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'Company': return '🏢';
+      case 'Group': return '🏢';
+      case 'Division': return '🏪';
+      default: return '🏢';
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'Company':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400';
+      case 'Group':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400';
+      case 'Division':
+        return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400';
+      default:
+        return 'bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400';
+    }
+  };
+
   try {
     return (
-      <div className={`w-full max-w-6xl mx-auto p-4 ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-200 dark:border-gray-700">
-          <div>
-            <h1 className="text-lg font-semibold">{company.company_group_print_name || 'Company Name'}</h1>
-            <div className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} flex items-center gap-2`}>
-              <span>{company.company_group_data_type || 'Company'}</span>
-              <span>•</span>
-              <span>{company.living_status || 'Active'}</span>
-              {company.group_name && (
+      <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className="max-w-7xl mx-auto p-6">
+          {/* Header Section */}
+          <div className={`rounded-xl shadow-sm border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} mb-6`}>
+            <div className="p-6">
+              {/* Top Actions */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  {onBack && (
+                    <button
+                      onClick={onBack}
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        theme === 'dark'
+                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                      Back
+                    </button>
+                  )}
+                  <nav className="text-sm text-gray-500 dark:text-gray-400">
+                    <span>Companies</span> / <span className="text-gray-900 dark:text-gray-100 font-medium">Details</span>
+                  </nav>
+                </div>
+                {onEdit && (
+                  <button
+                    onClick={onEdit}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit
+                  </button>
+                )}
+              </div>
+
+              {/* Company Header */}
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className={`w-16 h-16 rounded-xl ${getTypeColor(company.company_group_data_type)} flex items-center justify-center text-2xl`}>
+                    {getTypeIcon(company.company_group_data_type)}
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h1 className={`text-2xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-2`}>
+                    {company.company_group_print_name}
+                  </h1>
+                  <div className="flex flex-wrap items-center gap-3 mb-3">
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getTypeColor(company.company_group_data_type)}`}>
+                      {company.company_group_data_type}
+                    </span>
+                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(company.living_status)}`}>
+                      {company.living_status || 'Active'}
+                    </span>
+                    {company.group_name && (
+                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                        theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        Group: {company.group_name}
+                      </span>
+                    )}
+                  </div>
+                  {company.legal_name && company.legal_name !== company.company_group_print_name && (
+                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Legal Name: {company.legal_name}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Basic Information */}
+            <div className="lg:col-span-2">
+              <div className={`rounded-xl shadow-sm border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} p-6`}>
+                <h2 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>
+                  Basic Information
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {company.other_names && (
+                    <div>
+                      <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                        Other Names
+                      </label>
+                      <p className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>
+                        {company.other_names}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {company.company_group_data_type === 'Company' && (
+                    <>
+                      {company.ownership_type && (
+                        <div>
+                          <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                            Ownership Type
+                          </label>
+                          <p className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>
+                            {company.ownership_type}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {company.global_operations && (
+                        <div>
+                          <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                            Global Operations
+                          </label>
+                          <p className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>
+                            {company.global_operations}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {company.founding_year && (
+                        <div>
+                          <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                            Founded
+                          </label>
+                          <p className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>
+                            {company.founding_year}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {(company.established_day && company.established_month) && (
+                        <div>
+                          <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                            Established
+                          </label>
+                          <p className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>
+                            {company.established_day}/{company.established_month}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {company.company_size && (
+                        <div>
+                          <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                            Company Size
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <div className="flex">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <svg
+                                  key={star}
+                                  className={`w-4 h-4 ${
+                                    star <= company.company_size ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'
+                                  }`}
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                              ))}
+                            </div>
+                            <span className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                              ({company.company_size}/5)
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {company.ntn_no && (
+                        <div>
+                          <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                            NTN Number
+                          </label>
+                          <p className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'} font-mono`}>
+                            {company.ntn_no}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {company.website && (
+                        <div className="md:col-span-2">
+                          <label className={`block text-sm font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
+                            Website
+                          </label>
+                          <a 
+                            href={company.website} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm inline-flex items-center gap-1 transition-colors"
+                          >
+                            {company.website}
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                          </a>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="space-y-6">
+              {company.company_group_data_type === 'Company' && (
                 <>
-                  <span>•</span>
-                  <span><strong>Group:</strong> {company.group_name}</span>
+                  {/* Ratings */}
+                  <div className={`rounded-xl shadow-sm border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} p-6`}>
+                    <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4`}>
+                      Ratings & Assessments
+                    </h3>
+                    <div className="space-y-4">
+                      {[
+                        { label: 'Brand Image', value: company.company_brand_image, icon: '⭐' },
+                        { label: 'Business Volume', value: company.company_business_volume, icon: '📈' },
+                        { label: 'Financials', value: company.company_financials, icon: '💰' },
+                        { label: 'IISOL Relationship', value: company.iisol_relationship, icon: '🤝' }
+                      ].map((rating) => (
+                        <div key={rating.label} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg">{rating.icon}</span>
+                            <span className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                              {rating.label}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="flex">
+                              {[1, 2, 3, 4, 5].map((star) => (
+                                <svg
+                                  key={star}
+                                  className={`w-3 h-3 ${
+                                    rating.value && star <= rating.value ? 'text-yellow-400' : 'text-gray-300 dark:text-gray-600'
+                                  }`}
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                              ))}
+                            </div>
+                            <span className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
+                              {rating.value || 0}/5
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </>
               )}
             </div>
           </div>
-          <div className="flex gap-2">
-            {onBack && (
-              <button
-                onClick={onBack}
-                className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                  theme === 'dark'
-                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-              >
-                Back
-              </button>
-            )}
-            {onEdit && (
-              <button
-                onClick={onEdit}
-                className="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-xs font-medium"
-              >
-                Edit
-              </button>
-            )}
-          </div>
-        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Basic Information */}
-        <div className={`p-3 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <h2 className="text-sm font-medium mb-3">Basic Information</h2>
-          <div className="space-y-2">
-            <div>
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Legal Name</label>
-              <p className="text-xs">{company.legal_name}</p>
-            </div>
-            {company.other_names && (
-              <div>
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Other Names</label>
-                <p className="text-xs">{company.other_names}</p>
-              </div>
-            )}
-            {/* Show company-specific fields only for companies */}
-            {company.company_group_data_type === 'Company' && (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Ownership Type</label>
-                    <p className="text-xs">{company.ownership_type}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Global Operations</label>
-                    <p className="text-xs">{company.global_operations}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Founded</label>
-                    <p className="text-xs">{company.founding_year || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Established</label>
-                    <p className="text-xs">
-                      {company.established_day && company.established_month 
-                        ? `${company.established_day}/${company.established_month}` 
-                        : 'Not specified'}
-                    </p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Company Size</label>
-                    <p className="text-xs">{company.company_size ? `${company.company_size}/5` : 'Not specified'}</p>
-                  </div>
-                  {company.ntn_no && (
-                    <div>
-                      <label className="text-xs font-medium text-gray-500 dark:text-gray-400">NTN Number</label>
-                      <p className="text-xs">{company.ntn_no}</p>
-                    </div>
-                  )}
-                </div>
-                {company.website && (
-                  <div>
-                    <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Website</label>
-                    <p className="text-xs">
-                      <a 
-                        href={company.website} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-600 dark:text-blue-400 hover:underline"
+          {/* Additional Sections for Companies */}
+          {company.company_group_data_type === 'Company' && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+              {/* Business Operations */}
+              <div className={`rounded-xl shadow-sm border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} p-6`}>
+                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4 flex items-center gap-2`}>
+                  <span className="text-xl">🔧</span>
+                  Business Operations
+                </h3>
+                {getOperations().length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {getOperations().map((operation, index) => (
+                      <span
+                        key={index}
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                          theme === 'dark'
+                            ? 'bg-blue-900/20 text-blue-400 border border-blue-800'
+                            : 'bg-blue-100 text-blue-800 border border-blue-200'
+                        }`}
                       >
-                        {company.website}
-                      </a>
-                    </p>
+                        {operation}
+                      </span>
+                    ))}
                   </div>
+                ) : (
+                  <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                    No operations specified
+                  </p>
                 )}
-              </>
-            )}
-          </div>
-        </div>
+              </div>
 
-        {/* Show company-specific sections only for companies */}
-        {company.company_group_data_type === 'Company' && (
-          <>
-            {/* Business Operations */}
-            <div className={`p-3 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-              <h2 className="text-sm font-medium mb-3">Business Operations</h2>
-              {getOperations().length > 0 ? (
-                <div className="flex flex-wrap gap-1">
-                  {getOperations().map((operation, index) => (
-                    <span
-                      key={index}
-                      className={`px-2 py-1 rounded text-xs ${
-                        theme === 'dark'
-                          ? 'bg-gray-700 text-gray-300'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {operation}
-                    </span>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-gray-500 dark:text-gray-400">No operations specified</p>
-              )}
-            </div>
-
-            {/* Industries */}
-            <div className={`p-3 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-              <h2 className="text-sm font-medium mb-3">Industries ({company.selected_industries.length})</h2>
-              {company.selected_industries.length > 0 ? (
-                <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {company.selected_industries.map((industryId) => (
-                    <div
-                      key={industryId}
-                      className={`px-2 py-1 rounded text-xs ${
-                        theme === 'dark'
-                          ? 'bg-gray-700 text-gray-300'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {getIndustryName(industryId)}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-xs text-gray-500 dark:text-gray-400">No industries selected</p>
-              )}
-            </div>
-
-            {/* Ratings & Assessments */}
-            <div className={`p-3 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-              <h2 className="text-sm font-medium mb-3">Ratings & Assessments</h2>
-              <div className="space-y-2">
-                {[
-                  { label: 'Brand Image', value: company.company_brand_image },
-                  { label: 'Business Volume', value: company.company_business_volume },
-                  { label: 'Financials', value: company.company_financials },
-                  { label: 'IISOL Relationship', value: company.iisol_relationship }
-                ].map((rating) => (
-                  <div key={rating.label} className="flex items-center justify-between">
-                    <span className="text-xs font-medium">{rating.label}</span>
-                    <span className="text-xs">
-                      {rating.value ? `${rating.value}/5` : 'Not rated'}
-                    </span>
+              {/* Industries */}
+              <div className={`rounded-xl shadow-sm border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} p-6`}>
+                <h3 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-4 flex items-center gap-2`}>
+                  <span className="text-xl">🏭</span>
+                  Industries ({company.selected_industries.length})
+                </h3>
+                {company.selected_industries.length > 0 ? (
+                  <div className="space-y-2 max-h-40 overflow-y-auto">
+                    {company.selected_industries.map((industryId) => (
+                      <div
+                        key={industryId}
+                        className={`flex items-center gap-2 p-2 rounded-lg ${
+                          theme === 'dark'
+                            ? 'bg-purple-900/20 text-purple-300 border border-purple-800'
+                            : 'bg-purple-100 text-purple-800 border border-purple-200'
+                        }`}
+                      >
+                        <span className="w-2 h-2 bg-current rounded-full flex-shrink-0"></span>
+                        <span className="text-sm">{getIndustryName(industryId)}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                ) : (
+                  <p className={`text-sm ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
+                    No industries selected
+                  </p>
+                )}
               </div>
             </div>
-          </>
-        )}
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
   } catch (renderError) {
     console.error('CompanyView render error:', renderError);
     return (
