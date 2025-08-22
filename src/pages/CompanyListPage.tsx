@@ -35,6 +35,7 @@ interface Company {
   };
   selected_industries?: number[];
   children?: Company[];
+  group_name?: string;
 }
 
 const CompanyListPage = () => {
@@ -73,24 +74,48 @@ const CompanyListPage = () => {
     fetchCompanies();
   }, [fetchCompanies]);
 
-  // Build tree structure from flat array
+  // Build tree structure from flat array - filter out groups
   const buildTree = (flatData: Company[]): Company[] => {
     const map = new Map<string, Company>();
     const roots: Company[] = [];
 
-    // First pass: create map of all companies
-    flatData.forEach(company => {
-      map.set(company.record_id, { ...company, children: [] });
+    // Create maps for reference
+    const companiesMap = new Map<string, Company>();
+    const groupsMap = new Map<string, Company>();
+    
+    // Separate companies, divisions, and groups
+    flatData.forEach(item => {
+      if (item.company_group_data_type === 'Group') {
+        groupsMap.set(item.record_id, item);
+      } else {
+        companiesMap.set(item.record_id, item);
+      }
     });
 
-    // Second pass: build tree structure
-    flatData.forEach(company => {
+    // First pass: create enhanced company/division objects with group info
+    companiesMap.forEach(company => {
+      const enhanced = { ...company, children: [] };
+      
+      // If parent is a group, add group name for display
+      if (company.parent_id && groupsMap.has(company.parent_id)) {
+        const parentGroup = groupsMap.get(company.parent_id)!;
+        enhanced.group_name = parentGroup.company_group_print_name;
+      }
+      
+      map.set(company.record_id, enhanced);
+    });
+
+    // Second pass: build tree structure (only companies and divisions)
+    companiesMap.forEach(company => {
       const companyNode = map.get(company.record_id)!;
+      
       if (company.parent_id && map.has(company.parent_id)) {
+        // Parent is a company - create parent-child relationship
         const parent = map.get(company.parent_id)!;
         if (!parent.children) parent.children = [];
         parent.children.push(companyNode);
       } else {
+        // No parent or parent is a group - make this a root node
         roots.push(companyNode);
       }
     });
@@ -119,7 +144,8 @@ const CompanyListPage = () => {
       const matches = (
         company.company_group_print_name.toLowerCase().includes(lowerTerm) ||
         (company.legal_name && company.legal_name.toLowerCase().includes(lowerTerm)) ||
-        (company.other_names && company.other_names.toLowerCase().includes(lowerTerm))
+        (company.other_names && company.other_names.toLowerCase().includes(lowerTerm)) ||
+        (company.group_name && company.group_name.toLowerCase().includes(lowerTerm))
       );
       const filteredChildren = company.children
         ? company.children.map(filterNode).filter((child): child is Company => child !== null)
@@ -250,6 +276,12 @@ const CompanyListPage = () => {
                 {company.legal_name && (
                   <p className={`text-sm mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
                     Legal: {company.legal_name}
+                  </p>
+                )}
+
+                {company.group_name && (
+                  <p className={`text-sm mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
+                    <span className="font-medium">Group:</span> {company.group_name}
                   </p>
                 )}
 
