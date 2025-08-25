@@ -47,23 +47,79 @@ const CompanyListPage = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
-  // Load companies
+  // Load companies, divisions, and groups
   const fetchCompanies = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get('/companies/');
-      if (response.ok) {
-        const data = await response.json();
-        // Build tree structure
-        const tree = buildTree(data);
-        setCompanies(tree);
-        setError('');
-      } else {
+      
+      // Fetch companies, divisions, and groups
+      const [companiesResponse, divisionsResponse, groupsResponse] = await Promise.all([
+        apiClient.get('/companies/'),
+        apiClient.get('/divisions/'),
+        apiClient.get('/groups/')
+      ]);
+
+      if (!companiesResponse.ok) {
         throw new Error('Failed to fetch companies');
       }
+
+      const companiesData = await companiesResponse.json();
+      console.log('📊 Companies data:', companiesData.length, 'items');
+
+      let divisionsData = [];
+      if (divisionsResponse.ok) {
+        divisionsData = await divisionsResponse.json();
+        console.log('📊 Divisions data:', divisionsData.length, 'items');
+        
+        // Transform divisions to match company structure
+        divisionsData = divisionsData.map((division: any) => ({
+          record_id: division.record_id,
+          company_group_print_name: division.division_print_name,
+          company_group_data_type: 'Division' as const,
+          parent_id: division.parent_id,
+          legal_name: division.legal_name,
+          other_names: division.other_names,
+          living_status: division.living_status,
+          created_at: division.created_at,
+          updated_at: division.updated_at
+        }));
+      } else {
+        console.warn('Failed to fetch divisions, continuing without divisions');
+      }
+
+      let groupsData = [];
+      if (groupsResponse.ok) {
+        groupsData = await groupsResponse.json();
+        console.log('📊 Groups data:', groupsData.length, 'items');
+        
+        // Transform groups to match company structure for consistent handling
+        groupsData = groupsData.map((group: any) => ({
+          record_id: group.record_id,
+          company_group_print_name: group.group_print_name,
+          group_print_name: group.group_print_name, // Keep original for reference
+          company_group_data_type: 'Group' as const,
+          parent_id: group.parent_id,
+          legal_name: group.legal_name,
+          other_names: group.other_names,
+          living_status: group.living_status,
+          created_at: group.created_at,
+          updated_at: group.updated_at
+        }));
+      } else {
+        console.warn('Failed to fetch groups, continuing without groups');
+      }
+
+      // Combine all data
+      const allData = [...companiesData, ...divisionsData, ...groupsData];
+      console.log('📊 Total combined data:', allData.length, 'items');
+      
+      // Build tree structure
+      const tree = buildTree(allData);
+      setCompanies(tree);
+      setError('');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(`Failed to load companies: ${errorMessage}`);
+      setError(`Failed to load data: ${errorMessage}`);
       console.error('Fetch Error:', err);
     } finally {
       setLoading(false);
@@ -74,50 +130,64 @@ const CompanyListPage = () => {
     fetchCompanies();
   }, [fetchCompanies]);
 
-  // Build tree structure from flat array - filter out groups
+  // Build tree structure from flat array - show only Companies and Divisions (not Groups)
   const buildTree = (flatData: Company[]): Company[] => {
     const map = new Map<string, Company>();
     const roots: Company[] = [];
 
     // Create maps for reference
-    const companiesMap = new Map<string, Company>();
+    const companiesAndDivisionsMap = new Map<string, Company>();
     const groupsMap = new Map<string, Company>();
     
-    // Separate companies, divisions, and groups
+    // Separate entities: only include Companies and Divisions in display, but keep Groups for reference
     flatData.forEach(item => {
       if (item.company_group_data_type === 'Group') {
         groupsMap.set(item.record_id, item);
-      } else {
-        companiesMap.set(item.record_id, item);
+      } else if (item.company_group_data_type === 'Company' || item.company_group_data_type === 'Division') {
+        companiesAndDivisionsMap.set(item.record_id, item);
       }
+    });
+
+    console.log('🔍 Building tree with:', {
+      totalItems: flatData.length,
+      groups: groupsMap.size,
+      companies: Array.from(companiesAndDivisionsMap.values()).filter(e => e.company_group_data_type === 'Company').length,
+      divisions: Array.from(companiesAndDivisionsMap.values()).filter(e => e.company_group_data_type === 'Division').length
     });
 
     // First pass: create enhanced company/division objects with group info
-    companiesMap.forEach(company => {
-      const enhanced = { ...company, children: [] };
+    companiesAndDivisionsMap.forEach(entity => {
+      const enhanced = { ...entity, children: [] };
       
       // If parent is a group, add group name for display
-      if (company.parent_id && groupsMap.has(company.parent_id)) {
-        const parentGroup = groupsMap.get(company.parent_id)!;
-        enhanced.group_name = parentGroup.company_group_print_name;
+      if (entity.parent_id && groupsMap.has(entity.parent_id)) {
+        const parentGroup = groupsMap.get(entity.parent_id)!;
+        enhanced.group_name = parentGroup.company_group_print_name || parentGroup.group_print_name;
       }
       
-      map.set(company.record_id, enhanced);
+      map.set(entity.record_id, enhanced);
     });
 
     // Second pass: build tree structure (only companies and divisions)
-    companiesMap.forEach(company => {
-      const companyNode = map.get(company.record_id)!;
+    companiesAndDivisionsMap.forEach(entity => {
+      const entityNode = map.get(entity.record_id)!;
       
-      if (company.parent_id && map.has(company.parent_id)) {
-        // Parent is a company - create parent-child relationship
-        const parent = map.get(company.parent_id)!;
+      if (entity.parent_id && map.has(entity.parent_id)) {
+        // Parent is a company - create parent-child relationship (divisions under companies)
+        const parent = map.get(entity.parent_id)!;
         if (!parent.children) parent.children = [];
-        parent.children.push(companyNode);
+        parent.children.push(entityNode);
+        console.log(`📝 Added ${entity.company_group_data_type} "${entity.company_group_print_name}" under ${parent.company_group_data_type} "${parent.company_group_print_name}"`);
       } else {
         // No parent or parent is a group - make this a root node
-        roots.push(companyNode);
+        roots.push(entityNode);
+        console.log(`📝 Added ${entity.company_group_data_type} "${entity.company_group_print_name}" as root node`);
       }
+    });
+
+    console.log('🌳 Tree structure built:', {
+      rootNodes: roots.length,
+      totalNodesWithChildren: Array.from(map.values()).filter(node => node.children && node.children.length > 0).length
     });
 
     return roots;
@@ -158,49 +228,32 @@ const CompanyListPage = () => {
     return companies.map(filterNode).filter((company): company is Company => company !== null);
   }, []);
 
-  // Get company type icon and color
+  // Get company type color
   const getCompanyTypeConfig = (type: string) => {
     switch (type) {
       case 'Group':
         return { 
-          icon: '🏭', 
           color: 'text-green-700 dark:text-green-400', 
-          bgColor: 'bg-green-100 dark:bg-green-900/20',
-          borderColor: 'border-green-200 dark:border-green-700'
+          bgColor: 'bg-green-100 dark:bg-green-900/20'
         };
       case 'Company':
         return { 
-          icon: '🏢', 
           color: 'text-blue-700 dark:text-blue-400', 
-          bgColor: 'bg-blue-100 dark:bg-blue-900/20',
-          borderColor: 'border-blue-200 dark:border-blue-700'
+          bgColor: 'bg-blue-100 dark:bg-blue-900/20'
         };
       case 'Division':
         return { 
-          icon: '🏪', 
           color: 'text-purple-700 dark:text-purple-400', 
-          bgColor: 'bg-purple-100 dark:bg-purple-900/20',
-          borderColor: 'border-purple-200 dark:border-purple-700'
+          bgColor: 'bg-purple-100 dark:bg-purple-900/20'
         };
       default:
         return { 
-          icon: '🏢', 
           color: 'text-gray-700 dark:text-gray-400', 
-          bgColor: 'bg-gray-100 dark:bg-gray-900/20',
-          borderColor: 'border-gray-200 dark:border-gray-700'
+          bgColor: 'bg-gray-100 dark:bg-gray-900/20'
         };
     }
   };
 
-  // Get rating color
-  const getRatingColor = (rating?: number): string => {
-    if (!rating) return 'text-gray-400';
-    if (rating >= 4) return 'text-emerald-500';
-    if (rating === 3) return 'text-yellow-500';
-    if (rating === 2) return 'text-gray-500';
-    if (rating === 1) return 'text-orange-500';
-    return 'text-red-500';
-  };
 
   // Get operations count
   const getOperationsCount = (operations?: Company['operations']): number => {
@@ -221,130 +274,102 @@ const CompanyListPage = () => {
 
     return (
       <div className="relative">
-        {/* Company Card */}
+        {/* Company Row */}
         <div 
           className={`
-            border rounded-lg p-4 mb-3 transition-all duration-200 hover:shadow-md cursor-pointer
-            ${typeConfig.bgColor} ${typeConfig.borderColor}
-            ${theme === 'dark' ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50'}
+            border rounded p-3 mb-2 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/50
+            ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}
           `}
-          style={{ marginLeft: `${level * 24}px` }}
+          style={{ marginLeft: `${level * 20}px` }}
         >
-          <div className="flex items-start justify-between">
+          <div className="flex items-center justify-between">
             {/* Left: Company Info */}
-            <div className="flex items-start gap-3 flex-1">
+            <div className="flex items-center gap-3 flex-1">
               {/* Expand/Collapse Button */}
-              <div className="flex items-center">
-                {hasChildren ? (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      toggleNode(company.record_id);
-                    }}
-                    className={`p-1 rounded transition-colors ${
-                      theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-200'
-                    }`}
+              {hasChildren ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleNode(company.record_id);
+                  }}
+                  className={`p-1 rounded transition-colors ${
+                    theme === 'dark' ? 'hover:bg-gray-600' : 'hover:bg-gray-200'
+                  }`}
+                >
+                  <svg 
+                    className={`w-3 h-3 transition-transform ${isExpanded ? 'rotate-90' : ''}`} 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
                   >
-                    <svg 
-                      className={`w-4 h-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} 
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </button>
-                ) : (
-                  <div className="w-6 h-6" />
-                )}
-              </div>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              ) : (
+                <div className="w-5 h-5" />
+              )}
 
-              {/* Company Type Icon */}
-              <div className="text-2xl">{typeConfig.icon}</div>
+              {/* Company Type Badge */}
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${typeConfig.bgColor} ${typeConfig.color}`}>
+                {company.company_group_data_type.charAt(0)}
+              </div>
 
               {/* Company Details */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className={`font-semibold text-lg ${typeConfig.color} truncate`}>
+                  <h3 className={`font-medium text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'} truncate`}>
                     {company.company_group_print_name}
                   </h3>
-                  <span className={`px-2 py-1 text-xs rounded-full font-medium ${typeConfig.bgColor} ${typeConfig.color}`}>
+                  <span className={`px-2 py-0.5 text-xs rounded ${typeConfig.bgColor} ${typeConfig.color}`}>
                     {company.company_group_data_type}
                   </span>
+                  {company.living_status && (
+                    <span className={`px-2 py-0.5 text-xs rounded ${
+                      company.living_status.toLowerCase() === 'active'
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400'
+                        : company.living_status.toLowerCase() === 'inactive'
+                        ? 'bg-red-100 text-red-700 dark:bg-red-900/20 dark:text-red-400'
+                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-400'
+                    }`}>
+                      {company.living_status}
+                    </span>
+                  )}
+                  {company.group_name && (
+                    <span className="px-2 py-0.5 text-xs rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-400">
+                      Group: {company.group_name}
+                    </span>
+                  )}
                 </div>
 
-                {company.legal_name && (
-                  <p className={`text-sm mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                    Legal: {company.legal_name}
-                  </p>
-                )}
-
-                {company.group_name && (
-                  <p className={`text-sm mb-1 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-600'}`}>
-                    <span className="font-medium">Group:</span> {company.group_name}
-                  </p>
-                )}
-
-                <div className="flex flex-wrap gap-4 text-xs">
-                  {company.living_status && (
-                    <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                      Status: <span className="font-medium">{company.living_status}</span>
-                    </span>
+                <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                  {company.legal_name && company.legal_name !== company.company_group_print_name && (
+                    <span>Legal: {company.legal_name}</span>
                   )}
                   {company.ownership_type && (
-                    <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                      Type: <span className="font-medium">{company.ownership_type}</span>
-                    </span>
-                  )}
-                  {company.global_operations && (
-                    <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                      Ops: <span className="font-medium">{company.global_operations}</span>
-                    </span>
+                    <span>Type: {company.ownership_type}</span>
                   )}
                   {company.founding_year && (
-                    <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-                      Founded: <span className="font-medium">{company.founding_year}</span>
-                    </span>
+                    <span>Founded: {company.founding_year}</span>
                   )}
                 </div>
               </div>
             </div>
 
             {/* Right: Quick Stats & Actions */}
-            <div className="flex items-start gap-4">
+            <div className="flex items-center gap-4">
               {/* Quick Stats */}
-              <div className="text-right space-y-1">
-                <div className="flex items-center gap-2 text-xs">
-                  <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Size:</span>
-                  <span className="font-medium">{company.company_size || 'N/A'}/5</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Operations:</span>
-                  <span className="font-medium">{getOperationsCount(company.operations)}</span>
-                </div>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className={`${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Industries:</span>
-                  <span className="font-medium">{company.selected_industries?.length || 0}</span>
-                </div>
-                {/* Ratings */}
-                <div className="flex gap-1 text-xs">
-                  <span className={getRatingColor(company.company_brand_image)}>⭐</span>
-                  <span className={getRatingColor(company.company_business_volume)}>📈</span>
-                  <span className={getRatingColor(company.company_financials)}>💰</span>
-                  <span className={getRatingColor(company.iisol_relationship)}>🤝</span>
-                </div>
+              <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
+                <span>Size: {company.company_size || 'N/A'}/5</span>
+                <span>Ops: {getOperationsCount(company.operations)}</span>
+                <span>Industries: {company.selected_industries?.length || 0}</span>
               </div>
 
               {/* Actions */}
               <button
                 onClick={handleViewDetails}
-                className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
-                  theme === 'dark'
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
+                className="px-3 py-1 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
               >
-                View Details
+                View
               </button>
             </div>
           </div>
@@ -352,7 +377,7 @@ const CompanyListPage = () => {
 
         {/* Children */}
         {hasChildren && isExpanded && company.children && (
-          <div className="space-y-2">
+          <div className="space-y-1">
             {company.children.map(child => (
               <CompanyNode key={child.record_id} company={child} level={level + 1} />
             ))}
@@ -392,8 +417,8 @@ const CompanyListPage = () => {
         {/* Header */}
         <div className="mb-6">
           <div className="flex justify-between items-center mb-4">
-            <h1 className={`text-3xl font-bold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
-              Company View
+            <h1 className={`text-2xl font-semibold ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
+              Companies
             </h1>
             <div className="flex gap-3">
               <button
@@ -439,11 +464,10 @@ const CompanyListPage = () => {
           </div>
         </div>
         
-        {/* Company Tree */}
-        <div className="space-y-2">
+        {/* Company Table */}
+        <div className={`rounded-lg border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
           {filteredCompanies.length === 0 ? (
-            <div className={`text-center py-12 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
-              <div className="text-4xl mb-4">🏢</div>
+            <div className={`text-center py-12 ${theme === 'dark' ? 'bg-gray-800 text-gray-400' : 'bg-white text-gray-500'}`}>
               <p className="text-lg mb-2">
                 {searchTerm ? 'No companies match your search.' : 'No companies found.'}
               </p>
@@ -453,17 +477,35 @@ const CompanyListPage = () => {
               {!searchTerm && (
                 <button
                   onClick={() => navigate('/company')}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                 >
                   Add Company
                 </button>
               )}
             </div>
           ) : (
-            <div className="space-y-3">
-              {filteredCompanies.map(company => (
-                <CompanyNode key={company.record_id} company={company} />
-              ))}
+            <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+              {/* Table Header */}
+              <div className={`px-4 py-3 border-b ${theme === 'dark' ? 'border-gray-700 bg-gray-750' : 'border-gray-200 bg-gray-50'}`}>
+                <div className="flex items-center gap-4">
+                  <div className="w-5"></div>
+                  <div className="w-8"></div>
+                  <div className="flex-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    Company Details
+                  </div>
+                  <div className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    Quick Stats
+                  </div>
+                  <div className="w-16"></div>
+                </div>
+              </div>
+              
+              {/* Companies List */}
+              <div className="space-y-1 p-2">
+                {filteredCompanies.map(company => (
+                  <CompanyNode key={company.record_id} company={company} />
+                ))}
+              </div>
             </div>
           )}
         </div>

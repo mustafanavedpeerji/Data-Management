@@ -107,6 +107,7 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
   // State for dropdowns and data
   const [allIndustries, setAllIndustries] = useState<Industry[]>([]);
   const [companies, setCompanies] = useState<any[]>([]);
+  const [groups, setGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   
@@ -121,6 +122,7 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
   useEffect(() => {
     loadIndustries();
     loadCompanies();
+    loadGroups();
   }, []);
 
   // Cleanup effect for modal
@@ -180,6 +182,23 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
       }
     } catch (error) {
       console.error('Failed to load companies:', error);
+    }
+  };
+
+  // Load groups for parent selection
+  const loadGroups = async () => {
+    try {
+      console.log('🔍 Loading groups from /groups/ endpoint');
+      const response = await apiClient.get('/groups/');
+      if (response.ok) {
+        const data = await response.json();
+        console.log('📊 Groups loaded:', data);
+        setGroups(data);
+      } else {
+        console.error('Failed to load groups - response not ok:', response.status, response.statusText);
+      }
+    } catch (error) {
+      console.error('Failed to load groups:', error);
     }
   };
 
@@ -851,23 +870,24 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
                   }`}
                 >
                   <option value="">None</option>
-                  {companies
-                    .filter((company) => {
-                      // When adding Company, show only Groups
-                      if (formData.company_group_data_type === 'Company') {
-                        return company.company_group_data_type === 'Group';
-                      }
-                      // When adding Division, show only Companies
-                      if (formData.company_group_data_type === 'Division') {
-                        return company.company_group_data_type === 'Company';
-                      }
-                      return false;
-                    })
-                    .map((company) => (
-                      <option key={company.record_id} value={company.record_id}>
-                        {company.company_group_print_name} ({company.company_group_data_type})
+                  {/* When adding Company, show Groups from groups table */}
+                  {formData.company_group_data_type === 'Company' && 
+                    groups.map((group) => (
+                      <option key={group.record_id} value={group.record_id}>
+                        {group.group_print_name} (Group)
                       </option>
-                    ))}
+                    ))
+                  }
+                  {/* When adding Division, show Companies from companies table */}
+                  {formData.company_group_data_type === 'Division' && 
+                    companies
+                      .filter((company) => company.company_group_data_type === 'Company')
+                      .map((company) => (
+                        <option key={company.record_id} value={company.record_id}>
+                          {company.company_group_print_name} (Company)
+                        </option>
+                      ))
+                  }
                 </select>
               </div>
             )}

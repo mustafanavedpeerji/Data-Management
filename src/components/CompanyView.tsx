@@ -310,212 +310,205 @@ const CompanyView: React.FC<CompanyViewProps> = ({
 
   try {
     return (
-      <div className={`${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'} min-h-screen`}>
-        <div className="max-w-5xl mx-auto p-4">
-          {/* Header */}
-          <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border shadow-sm mb-4`}>
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                {onBack && (
-                  <button
-                    onClick={onBack}
-                    className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                      theme === 'dark'
-                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    ← Back
-                  </button>
-                )}
-                {onEdit && (
-                  <button
-                    onClick={onEdit}
-                    className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 transition-colors"
-                  >
-                    Edit
-                  </button>
-                )}
-              </div>
-              
-              <div className="flex items-start gap-3">
-                <div className={`w-12 h-12 rounded-lg ${getTypeColor(company.company_group_data_type)} flex items-center justify-center flex-shrink-0`}>
-                  <span className={`text-sm font-semibold ${theme === 'dark' ? 'text-gray-200' : 'text-gray-700'}`}>
-                    {company.company_group_data_type.charAt(0)}
-                  </span>
+      <div className={`min-h-screen ${theme === 'dark' ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className="max-w-4xl mx-auto p-6">
+          {/* Header Actions */}
+          <div className="flex items-center justify-between mb-6">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className={`text-sm font-medium transition-colors ${
+                  theme === 'dark'
+                    ? 'text-gray-400 hover:text-gray-200'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                ← Back to List
+              </button>
+            )}
+            {onEdit && (
+              <button
+                onClick={onEdit}
+                className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition-colors"
+              >
+                Edit Company
+              </button>
+            )}
+          </div>
+
+          {/* Company Details */}
+          <div className={`${theme === 'dark' ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow-sm border ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+            {/* Company Header */}
+            <div className={`px-6 py-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-200'}`}>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold ${
+                  company.company_group_data_type === 'Company' 
+                    ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                    : company.company_group_data_type === 'Group'
+                    ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                    : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400'
+                }`}>
+                  {company.company_group_data_type.charAt(0)}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h1 className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-2`}>
+                <div>
+                  <h1 className={`text-xl font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>
                     {company.company_group_print_name}
                   </h1>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${getTypeColor(company.company_group_data_type)}`}>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      company.company_group_data_type === 'Company' 
+                        ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
+                        : company.company_group_data_type === 'Group'
+                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                        : 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400'
+                    }`}>
                       {company.company_group_data_type}
                     </span>
-                    <span className={`px-2 py-1 rounded-md text-xs font-medium ${getStatusColor(company.living_status)}`}>
+                    <span className={`text-xs px-2 py-1 rounded ${
+                      (company.living_status || 'Active').toLowerCase() === 'active'
+                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                        : (company.living_status || '').toLowerCase() === 'inactive'
+                        ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                        : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
+                    }`}>
                       {company.living_status || 'Active'}
                     </span>
                     {company.group_name && (
-                      <span className={`px-2 py-1 rounded-md text-xs font-medium ${
+                      <span className={`text-xs px-2 py-1 rounded ${
                         theme === 'dark' ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-700'
                       }`}>
                         Group: {company.group_name}
                       </span>
                     )}
                   </div>
-                  {company.legal_name && company.legal_name !== company.company_group_print_name && (
-                    <p className={`text-sm mt-2 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                      Legal: {company.legal_name}
-                    </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Details Table */}
+            <div className="p-6">
+              <div className="space-y-6">
+                {/* Basic Information */}
+                <div>
+                  <h2 className={`text-sm font-semibold uppercase tracking-wide mb-3 ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    Basic Information
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      {company.legal_name && company.legal_name !== company.company_group_print_name && (
+                        <div>
+                          <dt className={`text-sm font-medium ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                          }`}>Legal Name</dt>
+                          <dd className={`text-sm mt-1 ${
+                            theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                          }`}>{company.legal_name}</dd>
+                        </div>
+                      )}
+                      {company.other_names && (
+                        <div>
+                          <dt className={`text-sm font-medium ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                          }`}>Other Names</dt>
+                          <dd className={`text-sm mt-1 ${
+                            theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                          }`}>{company.other_names}</dd>
+                        </div>
+                      )}
+                      {company.company_group_data_type === 'Company' && company.ownership_type && (
+                        <div>
+                          <dt className={`text-sm font-medium ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                          }`}>Ownership Type</dt>
+                          <dd className={`text-sm mt-1 ${
+                            theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                          }`}>{company.ownership_type}</dd>
+                        </div>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      {company.company_group_data_type === 'Company' && company.global_operations && (
+                        <div>
+                          <dt className={`text-sm font-medium ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                          }`}>Global Operations</dt>
+                          <dd className={`text-sm mt-1 ${
+                            theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                          }`}>{company.global_operations}</dd>
+                        </div>
+                      )}
+                      {company.company_group_data_type === 'Company' && company.founding_year && (
+                        <div>
+                          <dt className={`text-sm font-medium ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                          }`}>Founded</dt>
+                          <dd className={`text-sm mt-1 ${
+                            theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                          }`}>{company.founding_year}</dd>
+                        </div>
+                      )}
+                      {company.company_group_data_type === 'Company' && company.company_size && (
+                        <div>
+                          <dt className={`text-sm font-medium ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                          }`}>Company Size</dt>
+                          <dd className={`text-sm mt-1 ${
+                            theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                          }`}>{company.company_size}/5</dd>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {company.company_group_data_type === 'Company' && (company.ntn_no || company.website) && (
+                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {company.ntn_no && (
+                          <div>
+                            <dt className={`text-sm font-medium ${
+                              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                            }`}>NTN Number</dt>
+                            <dd className={`text-sm mt-1 font-mono ${
+                              theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                            }`}>{company.ntn_no}</dd>
+                          </div>
+                        )}
+                        {company.website && (
+                          <div>
+                            <dt className={`text-sm font-medium ${
+                              theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                            }`}>Website</dt>
+                            <dd className="text-sm mt-1">
+                              <a 
+                                href={company.website} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-600 dark:text-blue-400 hover:underline"
+                              >
+                                {company.website}
+                              </a>
+                            </dd>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   )}
                 </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Content */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Basic Information */}
-            <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border shadow-sm p-4`}>
-              <h2 className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>
-                Basic Information
-              </h2>
-              <div className="space-y-3">
-                {company.other_names && (
+                {/* Business Operations */}
+                {company.company_group_data_type === 'Company' && getOperations().length > 0 && (
                   <div>
-                    <label className={`block text-xs font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
-                      Other Names
-                    </label>
-                    <p className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>
-                      {company.other_names}
-                    </p>
-                  </div>
-                )}
-                
-                {company.company_group_data_type === 'Company' && (
-                  <>
-                    <div className="grid grid-cols-2 gap-3">
-                      {company.ownership_type && (
-                        <div>
-                          <label className={`block text-xs font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
-                            Ownership
-                          </label>
-                          <p className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>
-                            {company.ownership_type}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {company.global_operations && (
-                        <div>
-                          <label className={`block text-xs font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
-                            Operations
-                          </label>
-                          <p className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>
-                            {company.global_operations}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                      {company.founding_year && (
-                        <div>
-                          <label className={`block text-xs font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
-                            Founded
-                          </label>
-                          <p className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>
-                            {company.founding_year}
-                          </p>
-                        </div>
-                      )}
-                      
-                      {company.company_size && (
-                        <div>
-                          <label className={`block text-xs font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
-                            Size
-                          </label>
-                          <p className={`text-sm ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>
-                            {company.company_size}/5
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {company.ntn_no && (
-                      <div>
-                        <label className={`block text-xs font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
-                          NTN Number
-                        </label>
-                        <p className={`text-sm font-mono ${theme === 'dark' ? 'text-gray-200' : 'text-gray-900'}`}>
-                          {company.ntn_no}
-                        </p>
-                      </div>
-                    )}
-                    
-                    {company.website && (
-                      <div>
-                        <label className={`block text-xs font-medium ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} mb-1`}>
-                          Website
-                        </label>
-                        <a 
-                          href={company.website} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 dark:text-blue-400 hover:underline text-sm"
-                        >
-                          {company.website}
-                        </a>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Ratings & Operations */}
-            {company.company_group_data_type === 'Company' && (
-              <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border shadow-sm p-4`}>
-                <h2 className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>
-                  Ratings & Operations
-                </h2>
-                
-                {/* Ratings */}
-                <div className="mb-4">
-                  <h3 className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                    Assessment Ratings
-                  </h3>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="flex justify-between">
-                      <span>Brand Image</span>
-                      <span>{company.company_brand_image || 0}/5</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Business Volume</span>
-                      <span>{company.company_business_volume || 0}/5</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Financials</span>
-                      <span>{company.company_financials || 0}/5</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>IISOL Relations</span>
-                      <span>{company.iisol_relationship || 0}/5</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Operations */}
-                <div>
-                  <h3 className={`text-sm font-medium ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
-                    Business Operations
-                  </h3>
-                  {getOperations().length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
+                    <h2 className={`text-sm font-semibold uppercase tracking-wide mb-3 ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Business Operations
+                    </h2>
+                    <div className="flex flex-wrap gap-2">
                       {getOperations().map((operation, index) => (
                         <span
                           key={index}
-                          className={`px-2 py-1 rounded text-xs ${
+                          className={`px-3 py-1 text-sm rounded-full ${
                             theme === 'dark'
                               ? 'bg-gray-700 text-gray-300'
                               : 'bg-gray-100 text-gray-700'
@@ -525,38 +518,81 @@ const CompanyView: React.FC<CompanyViewProps> = ({
                         </span>
                       ))}
                     </div>
-                  ) : (
-                    <p className={`text-xs ${theme === 'dark' ? 'text-gray-400' : 'text-gray-600'}`}>
-                      No operations specified
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Industries Section */}
-          {company.company_group_data_type === 'Company' && company.selected_industries.length > 0 && (
-            <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-lg border shadow-sm p-4 mt-4`}>
-              <h2 className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'} mb-3`}>
-                Industries ({company.selected_industries.length})
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
-                {company.selected_industries.map((industryId) => (
-                  <div
-                    key={industryId}
-                    className={`px-3 py-2 rounded text-sm ${
-                      theme === 'dark'
-                        ? 'bg-gray-700 text-gray-300'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}
-                  >
-                    {getIndustryName(industryId)}
                   </div>
-                ))}
+                )}
+
+                {/* Assessment Ratings */}
+                {company.company_group_data_type === 'Company' && (
+                  <div>
+                    <h2 className={`text-sm font-semibold uppercase tracking-wide mb-3 ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Assessment Ratings
+                    </h2>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <dt className={`text-xs font-medium ${
+                          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                        }`}>Brand Image</dt>
+                        <dd className={`text-lg font-semibold mt-1 ${
+                          theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                        }`}>{company.company_brand_image || 0}<span className="text-sm text-gray-500">/5</span></dd>
+                      </div>
+                      <div className="text-center">
+                        <dt className={`text-xs font-medium ${
+                          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                        }`}>Business Volume</dt>
+                        <dd className={`text-lg font-semibold mt-1 ${
+                          theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                        }`}>{company.company_business_volume || 0}<span className="text-sm text-gray-500">/5</span></dd>
+                      </div>
+                      <div className="text-center">
+                        <dt className={`text-xs font-medium ${
+                          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                        }`}>Financials</dt>
+                        <dd className={`text-lg font-semibold mt-1 ${
+                          theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                        }`}>{company.company_financials || 0}<span className="text-sm text-gray-500">/5</span></dd>
+                      </div>
+                      <div className="text-center">
+                        <dt className={`text-xs font-medium ${
+                          theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                        }`}>IISOL Relations</dt>
+                        <dd className={`text-lg font-semibold mt-1 ${
+                          theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                        }`}>{company.iisol_relationship || 0}<span className="text-sm text-gray-500">/5</span></dd>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Industries */}
+                {company.company_group_data_type === 'Company' && company.selected_industries.length > 0 && (
+                  <div>
+                    <h2 className={`text-sm font-semibold uppercase tracking-wide mb-3 ${
+                      theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                    }`}>
+                      Industries ({company.selected_industries.length})
+                    </h2>
+                    <div className="space-y-1">
+                      {company.selected_industries.map((industryId) => (
+                        <div
+                          key={industryId}
+                          className={`text-sm py-2 px-3 rounded ${
+                            theme === 'dark'
+                              ? 'bg-gray-700/50 text-gray-300'
+                              : 'bg-gray-50 text-gray-700'
+                          }`}
+                        >
+                          {getIndustryName(industryId)}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     );
