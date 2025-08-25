@@ -47,12 +47,13 @@ const CompanyListPage = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
 
-  // Load companies, divisions, and groups
+  // Load companies, divisions, and groups using parallel API calls  
   const fetchCompanies = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('🚀 Loading data with parallel API calls...');
       
-      // Fetch companies, divisions, and groups
+      // Use parallel API calls for better performance
       const [companiesResponse, divisionsResponse, groupsResponse] = await Promise.all([
         apiClient.get('/companies/'),
         apiClient.get('/divisions/'),
@@ -96,7 +97,7 @@ const CompanyListPage = () => {
         groupsData = groupsData.map((group: any) => ({
           record_id: group.record_id,
           company_group_print_name: group.group_print_name,
-          group_print_name: group.group_print_name, // Keep original for reference
+          group_print_name: group.group_print_name,
           company_group_data_type: 'Group' as const,
           parent_id: group.parent_id,
           legal_name: group.legal_name,
@@ -117,10 +118,12 @@ const CompanyListPage = () => {
       const tree = buildTree(allData);
       setCompanies(tree);
       setError('');
+      console.log('✅ Data loading completed successfully');
+      
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       setError(`Failed to load data: ${errorMessage}`);
-      console.error('Fetch Error:', err);
+      console.error('❌ Fetch Error:', err);
     } finally {
       setLoading(false);
     }
