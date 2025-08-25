@@ -776,7 +776,7 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
   };
 
   return (
-    <div className={`w-full max-w-none mx-auto p-3 text-xs ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
+    <div className={`w-full max-w-none mx-auto p-3 text-sm ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
       <form onSubmit={handleSubmit} className="space-y-3">
         {/* Compact Header */}
         <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg text-white">
@@ -790,14 +790,14 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
 
         {/* Company Type Selection - First */}
         <div className={`p-2 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <label className="block text-xs font-medium mb-1">Company Type</label>
+          <label className="block text-sm font-medium mb-1">Company Type</label>
           <div className="flex gap-1">
             {getCompanyTypeOptions().map((option) => (
               <button
                 key={option.value}
                 type="button"
                 onClick={() => handleInputChange('company_group_data_type', option.value)}
-                className={`flex-1 px-2 py-1 rounded text-[10px] transition-colors ${
+                className={`flex-1 px-2 py-1 rounded text-xs transition-colors ${
                   formData.company_group_data_type === option.value
                     ? 'bg-blue-500 text-white'
                     : theme === 'dark' ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -811,12 +811,12 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
 
         {/* Basic Information - One Row */}
         <div className={`p-2 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <h3 className="text-xs font-medium mb-1">Basic Information</h3>
+          <h3 className="text-sm font-medium mb-1">Basic Information</h3>
           <div className={`grid gap-2 ${
             formData.company_group_data_type === 'Group' ? 'grid-cols-3' : 'grid-cols-4'
           }`}>
             <div>
-              <label className="block text-[10px] mb-1">
+              <label className="block text-xs mb-1">
                 {formData.company_group_data_type === 'Group' ? 'Group Print Name *' : 
                  formData.company_group_data_type === 'Division' ? 'Division Print Name *' : 
                  'Company Print Name *'}
@@ -825,33 +825,33 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
                 type="text"
                 value={formData.company_group_print_name}
                 onChange={(e) => handleInputChange('company_group_print_name', e.target.value)}
-                className={`w-full px-2 py-1 rounded border text-[10px] ${
+                className={`w-full px-2 py-1 rounded border text-xs ${
                   theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                 }`}
                 placeholder="Print name"
               />
-              {errors.company_group_print_name && <p className="text-[8px] text-red-500">{errors.company_group_print_name}</p>}
+              {errors.company_group_print_name && <p className="text-xs text-red-500">{errors.company_group_print_name}</p>}
             </div>
             <div>
-              <label className="block text-[10px] mb-1">Legal Name *</label>
+              <label className="block text-xs mb-1">Legal Name *</label>
               <input
                 type="text"
                 value={formData.legal_name}
                 onChange={(e) => handleInputChange('legal_name', e.target.value)}
-                className={`w-full px-2 py-1 rounded border text-[10px] ${
+                className={`w-full px-2 py-1 rounded border text-xs ${
                   theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                 }`}
                 placeholder="Legal name"
               />
-              {errors.legal_name && <p className="text-[8px] text-red-500">{errors.legal_name}</p>}
+              {errors.legal_name && <p className="text-xs text-red-500">{errors.legal_name}</p>}
             </div>
             <div>
-              <label className="block text-[10px] mb-1">Other Names</label>
+              <label className="block text-xs mb-1">Other Names</label>
               <input
                 type="text"
                 value={formData.other_names}
                 onChange={(e) => handleInputChange('other_names', e.target.value)}
-                className={`w-full px-2 py-1 rounded border text-[10px] ${
+                className={`w-full px-2 py-1 rounded border text-xs ${
                   theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                 }`}
                 placeholder="Other names"
@@ -859,13 +859,13 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
             </div>
             {formData.company_group_data_type !== 'Group' && (
               <div>
-                <label className="block text-[10px] mb-1">
+                <label className="block text-xs mb-1">
                   {formData.company_group_data_type === 'Company' ? 'Parent Group' : 'Parent Company'}
                 </label>
                 <select
                   value={formData.parent_id || ''}
                   onChange={(e) => handleInputChange('parent_id', e.target.value || null)}
-                  className={`w-full px-2 py-1 rounded border text-[10px] ${
+                  className={`w-full px-2 py-1 rounded border text-xs ${
                     theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                   }`}
                 >
@@ -896,16 +896,16 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
 
         {/* Status & Details - One Row */}
         <div className={`p-2 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <h3 className="text-xs font-medium mb-1">Status & Details</h3>
+          <h3 className="text-sm font-medium mb-1">Status & Details</h3>
           <div className={`grid gap-2 ${
             formData.company_group_data_type === 'Company' ? 'grid-cols-7' : 'grid-cols-1'
           }`}>
             <div>
-              <label className="block text-[10px] mb-1">Living Status</label>
+              <label className="block text-xs mb-1">Living Status</label>
               <select
                 value={formData.living_status}
                 onChange={(e) => handleInputChange('living_status', e.target.value)}
-                className={`w-full px-1 py-1 rounded border text-[10px] ${
+                className={`w-full px-1 py-1 rounded border text-xs ${
                   theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                 }`}
               >
@@ -918,11 +918,11 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
             {formData.company_group_data_type === 'Company' && (
               <>
                 <div>
-                  <label className="block text-[10px] mb-1">Ownership</label>
+                  <label className="block text-xs mb-1">Ownership</label>
                   <select
                     value={formData.ownership_type}
                     onChange={(e) => handleInputChange('ownership_type', e.target.value)}
-                    className={`w-full px-1 py-1 rounded border text-[10px] ${
+                    className={`w-full px-1 py-1 rounded border text-xs ${
                       theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                     }`}
                   >
@@ -935,11 +935,11 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] mb-1">Global Ops</label>
+                  <label className="block text-xs mb-1">Global Ops</label>
                   <select
                     value={formData.global_operations}
                     onChange={(e) => handleInputChange('global_operations', e.target.value)}
-                    className={`w-full px-1 py-1 rounded border text-[10px] ${
+                    className={`w-full px-1 py-1 rounded border text-xs ${
                       theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                     }`}
                   >
@@ -949,12 +949,12 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] mb-1">Founded Year</label>
+                  <label className="block text-xs mb-1">Founded Year</label>
                   <input
                     type="number"
                     value={formData.founding_year}
                     onChange={(e) => handleInputChange('founding_year', e.target.value)}
-                    className={`w-full px-1 py-1 rounded border text-[10px] ${
+                    className={`w-full px-1 py-1 rounded border text-xs ${
                       theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                     }`}
                     placeholder="2020"
@@ -963,12 +963,12 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] mb-1">Established Day</label>
+                  <label className="block text-xs mb-1">Established Day</label>
                   <input
                     type="number"
                     value={formData.established_day}
                     onChange={(e) => handleInputChange('established_day', e.target.value)}
-                    className={`w-full px-1 py-1 rounded border text-[10px] ${
+                    className={`w-full px-1 py-1 rounded border text-xs ${
                       theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                     }`}
                     placeholder="1-31"
@@ -977,11 +977,11 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] mb-1">Established Month</label>
+                  <label className="block text-xs mb-1">Established Month</label>
                   <select
                     value={formData.established_month}
                     onChange={(e) => handleInputChange('established_month', e.target.value)}
-                    className={`w-full px-1 py-1 rounded border text-[10px] ${
+                    className={`w-full px-1 py-1 rounded border text-xs ${
                       theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                     }`}
                   >
@@ -1001,12 +1001,12 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] mb-1">Company Size (1-5)</label>
+                  <label className="block text-xs mb-1">Company Size (1-5)</label>
                   <input
                     type="number"
                     value={formData.company_size || ''}
                     onChange={(e) => handleInputChange('company_size', e.target.value ? parseInt(e.target.value) : null)}
-                    className={`w-full px-1 py-1 rounded border text-[10px] ${
+                    className={`w-full px-1 py-1 rounded border text-xs ${
                       theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                     }`}
                     min="1"
@@ -1015,24 +1015,24 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] mb-1">NTN Number</label>
+                  <label className="block text-xs mb-1">NTN Number</label>
                   <input
                     type="text"
                     value={formData.ntn_no}
                     onChange={(e) => handleInputChange('ntn_no', e.target.value)}
-                    className={`w-full px-1 py-1 rounded border text-[10px] ${
+                    className={`w-full px-1 py-1 rounded border text-xs ${
                       theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                     }`}
                     placeholder="NTN"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] mb-1">Website</label>
+                  <label className="block text-xs mb-1">Website</label>
                   <input
                     type="url"
                     value={formData.website}
                     onChange={(e) => handleInputChange('website', e.target.value)}
-                    className={`w-full px-1 py-1 rounded border text-[10px] ${
+                    className={`w-full px-1 py-1 rounded border text-xs ${
                       theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                     }`}
                     placeholder="https://example.com"
@@ -1049,10 +1049,10 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
           <>
             {/* Business Operations - Checkboxes in One Row */}
         <div className={`p-2 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <h3 className="text-xs font-medium mb-1">Business Operations</h3>
+          <h3 className="text-sm font-medium mb-1">Business Operations</h3>
           <div className="flex gap-2 flex-wrap">
             {Object.entries(formData.operations).map(([key, value]) => (
-              <label key={key} className="flex items-center gap-1 text-[10px] cursor-pointer">
+              <label key={key} className="flex items-center gap-1 text-xs cursor-pointer">
                 <input
                   type="checkbox"
                   checked={value}
@@ -1067,7 +1067,7 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
 
         {/* Industry Classification - Compact */}
         <div className={`p-2 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <h3 className="text-xs font-medium mb-1">Industry Classification</h3>
+          <h3 className="text-sm font-medium mb-1">Industry Classification</h3>
           <div className="flex items-center gap-2">
             {formData.selected_industries.length > 0 && (
               <div className="flex flex-wrap gap-1 flex-1">
@@ -1089,7 +1089,7 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
             <button
               type="button"
               onClick={openIndustryModal}
-              className={`px-2 py-1 rounded border text-[10px] transition-colors ${
+              className={`px-2 py-1 rounded border text-xs transition-colors ${
                 theme === 'dark' 
                   ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
                   : 'border-gray-300 text-gray-600 hover:bg-gray-50'
@@ -1102,15 +1102,15 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
 
         {/* Company Assessments - Number Inputs in One Row */}
         <div className={`p-2 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-          <h3 className="text-xs font-medium mb-1">Company Assessments & Ratings (1-5)</h3>
+          <h3 className="text-sm font-medium mb-1">Company Assessments & Ratings (1-5)</h3>
           <div className="grid grid-cols-4 gap-2">
             <div>
-              <label className="block text-[10px] mb-1">🏆 Brand Image</label>
+              <label className="block text-xs mb-1">🏆 Brand Image</label>
               <input
                 type="number"
                 value={formData.company_brand_image || ''}
                 onChange={(e) => handleInputChange('company_brand_image', e.target.value ? parseInt(e.target.value) : null)}
-                className={`w-full px-1 py-1 rounded border text-[10px] ${
+                className={`w-full px-1 py-1 rounded border text-xs ${
                   theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                 }`}
                 min="1"
@@ -1119,12 +1119,12 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[10px] mb-1">📈 Business Volume</label>
+              <label className="block text-xs mb-1">📈 Business Volume</label>
               <input
                 type="number"
                 value={formData.company_business_volume || ''}
                 onChange={(e) => handleInputChange('company_business_volume', e.target.value ? parseInt(e.target.value) : null)}
-                className={`w-full px-1 py-1 rounded border text-[10px] ${
+                className={`w-full px-1 py-1 rounded border text-xs ${
                   theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                 }`}
                 min="1"
@@ -1133,12 +1133,12 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[10px] mb-1">💰 Financials</label>
+              <label className="block text-xs mb-1">💰 Financials</label>
               <input
                 type="number"
                 value={formData.company_financials || ''}
                 onChange={(e) => handleInputChange('company_financials', e.target.value ? parseInt(e.target.value) : null)}
-                className={`w-full px-1 py-1 rounded border text-[10px] ${
+                className={`w-full px-1 py-1 rounded border text-xs ${
                   theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                 }`}
                 min="1"
@@ -1147,12 +1147,12 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
               />
             </div>
             <div>
-              <label className="block text-[10px] mb-1">🤝 IISOL Relationship</label>
+              <label className="block text-xs mb-1">🤝 IISOL Relationship</label>
               <input
                 type="number"
                 value={formData.iisol_relationship || ''}
                 onChange={(e) => handleInputChange('iisol_relationship', e.target.value ? parseInt(e.target.value) : null)}
-                className={`w-full px-1 py-1 rounded border text-[10px] ${
+                className={`w-full px-1 py-1 rounded border text-xs ${
                   theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                 }`}
                 min="1"
