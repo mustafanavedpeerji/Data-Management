@@ -345,11 +345,22 @@ const CompanyListPage = () => {
                   {company.legal_name && company.legal_name !== company.company_group_print_name && (
                     <span>Legal: {company.legal_name}</span>
                   )}
-                  {company.ownership_type && (
-                    <span>Type: {company.ownership_type}</span>
+                  {company.company_group_data_type === 'Company' && (
+                    <>
+                      {company.ownership_type && (
+                        <span>Type: {company.ownership_type}</span>
+                      )}
+                      {company.founding_year && (
+                        <span>Founded: {company.founding_year}</span>
+                      )}
+                    </>
                   )}
-                  {company.founding_year && (
-                    <span>Founded: {company.founding_year}</span>
+                  {company.company_group_data_type === 'Division' && (
+                    <>
+                      {company.other_names && (
+                        <span>Other: {company.other_names}</span>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -357,11 +368,23 @@ const CompanyListPage = () => {
 
             {/* Right: Quick Stats & Actions */}
             <div className="flex items-center gap-4">
-              {/* Quick Stats */}
+              {/* Quick Stats - Only show relevant stats for each entity type */}
               <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-                <span>Size: {company.company_size || 'N/A'}/5</span>
-                <span>Ops: {getOperationsCount(company.operations)}</span>
-                <span>Industries: {company.selected_industries?.length || 0}</span>
+                {company.company_group_data_type === 'Company' && (
+                  <>
+                    <span>Size: {company.company_size || 'N/A'}/5</span>
+                    <span>Ops: {getOperationsCount(company.operations)}</span>
+                    <span>Industries: {company.selected_industries?.length || 0}</span>
+                  </>
+                )}
+                {company.company_group_data_type === 'Division' && (
+                  <>
+                    <span>Type: Division</span>
+                    {company.created_at && (
+                      <span>Created: {new Date(company.created_at).getFullYear()}</span>
+                    )}
+                  </>
+                )}
               </div>
 
               {/* Actions */}
