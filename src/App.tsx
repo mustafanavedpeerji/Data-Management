@@ -34,6 +34,7 @@ export default function App() {
 
             <Route path="/industry" element={<IndustryPage />} />
             <Route path="/company" element={<CompanyPage />} />
+            <Route path="/company/edit/:id" element={<CompanyPage />} />
             <Route path="/company/view/:id" element={<CompanyViewPage />} />
             <Route path="/company-view" element={<CompanyListPage />} />
 

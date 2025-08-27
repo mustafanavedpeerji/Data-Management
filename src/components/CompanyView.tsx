@@ -22,7 +22,7 @@ interface CompanyData {
   founding_year: string;
   established_day: string;
   established_month: string;
-  website: string;
+  websites: string[];
   company_size: number;
   ntn_no: string;
   operations: {
@@ -163,6 +163,20 @@ const CompanyView: React.FC<CompanyViewProps> = ({
                 return JSON.parse(data.selected_industries);
               } catch (e) {
                 console.warn('Failed to parse selected_industries:', data.selected_industries);
+                return [];
+              }
+            }
+            return [];
+          })(),
+          // Ensure websites is an array (parse JSON string if needed)
+          websites: (() => {
+            if (!data.websites) return [];
+            if (Array.isArray(data.websites)) return data.websites;
+            if (typeof data.websites === 'string') {
+              try {
+                return JSON.parse(data.websites);
+              } catch (e) {
+                console.warn('Failed to parse websites:', data.websites);
                 return [];
               }
             }
@@ -461,7 +475,7 @@ const CompanyView: React.FC<CompanyViewProps> = ({
                       )}
                     </div>
                   </div>
-                  {company.company_group_data_type === 'Company' && (company.ntn_no || company.website) && (
+                  {company.company_group_data_type === 'Company' && (company.ntn_no || (company.websites && company.websites.length > 0)) && (
                     <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {company.ntn_no && (
@@ -474,20 +488,24 @@ const CompanyView: React.FC<CompanyViewProps> = ({
                             }`}>{company.ntn_no}</dd>
                           </div>
                         )}
-                        {company.website && (
+                        {company.websites && company.websites.length > 0 && (
                           <div>
                             <dt className={`text-sm font-medium ${
                               theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
-                            }`}>Website</dt>
-                            <dd className="text-sm mt-1">
-                              <a 
-                                href={company.website} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="text-blue-600 dark:text-blue-400 hover:underline"
-                              >
-                                {company.website}
-                              </a>
+                            }`}>Website{company.websites.length > 1 ? 's' : ''}</dt>
+                            <dd className="text-sm mt-1 space-y-1">
+                              {company.websites.map((website, index) => (
+                                <div key={index}>
+                                  <a 
+                                    href={website} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 dark:text-blue-400 hover:underline block"
+                                  >
+                                    {website}
+                                  </a>
+                                </div>
+                              ))}
                             </dd>
                           </div>
                         )}

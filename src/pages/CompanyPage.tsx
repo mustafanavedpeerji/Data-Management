@@ -1,9 +1,10 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams, useParams } from "react-router";
 import PageMeta from "../components/common/PageMeta";
 import CompanyAddForm from "../components/CompanyAddForm";
 import apiClient from "../config/apiClient";
 import { useTheme } from "../context/ThemeContext";
+import { useNavigation } from "../context/NavigationContext";
 
 // Success Modal Component
 const SuccessModal: React.FC<{ isOpen: boolean; onClose: () => void; companyName: string; entityType?: string }> = ({ 
@@ -67,16 +68,201 @@ const SuccessModal: React.FC<{ isOpen: boolean; onClose: () => void; companyName
 
 const CompanyPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { id: routeId } = useParams();
+  const { setUnsavedChanges, navigateWithConfirm } = useNavigation();
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [savedCompanyName, setSavedCompanyName] = useState('');
   const [savedCompanyId, setSavedCompanyId] = useState<string | null>(null);
   const [savedEntityType, setSavedEntityType] = useState<string>('Company');
+  const [editCompanyData, setEditCompanyData] = useState<any>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isLoadingEdit, setIsLoadingEdit] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Get edit ID from either route params or query params (for backward compatibility)
+  const editId = routeId || searchParams.get('edit');
+
+  useEffect(() => {
+    if (editId) {
+      console.log('Edit mode detected with ID:', editId);
+      setIsEditMode(true);
+      setIsLoadingEdit(true);
+      loadCompanyForEdit(editId);
+    } else {
+      // Reset state when not in edit mode
+      console.log('Not in edit mode, resetting state');
+      setIsEditMode(false);
+      setEditCompanyData(null);
+      setIsLoadingEdit(false);
+      setHasUnsavedChanges(false);
+      setUnsavedChanges(false);
+    }
+  }, [editId, setUnsavedChanges]);
+
+  // Sync hasUnsavedChanges with navigation context
+  useEffect(() => {
+    setUnsavedChanges(hasUnsavedChanges && isEditMode);
+  }, [hasUnsavedChanges, isEditMode, setUnsavedChanges]);
+
+  // Warn user about unsaved changes when navigating away
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges && isEditMode) {
+        e.preventDefault();
+        e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
+        return 'You have unsaved changes. Are you sure you want to leave?';
+      }
+    };
+
+    const handlePopState = (e: PopStateEvent) => {
+      if (hasUnsavedChanges && isEditMode) {
+        // For back button, still use browser confirm since we can't easily show modal
+        const confirmLeave = window.confirm('You have unsaved changes. Are you sure you want to leave?');
+        if (!confirmLeave) {
+          // Push the current state back to prevent navigation
+          window.history.pushState(null, '', window.location.href);
+        }
+      }
+    };
+
+    if (isEditMode && hasUnsavedChanges) {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      window.addEventListener('popstate', handlePopState);
+    }
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [hasUnsavedChanges, isEditMode]);
+
+  // Note: useBlocker is not supported in current React Router setup
+  // Unsaved changes warning is handled via beforeunload and popstate events above
+
+  const loadCompanyForEdit = async (companyId: string) => {
+    try {
+      // First, try to load from companies
+      let response = await apiClient.get(`/companies/${companyId}`);
+      
+      if (!response.ok) {
+        // If not found in companies, try divisions
+        response = await apiClient.get(`/divisions/${companyId}`);
+      }
+      
+      if (!response.ok) {
+        // If not found in divisions, try groups
+        response = await apiClient.get(`/groups/${companyId}`);
+      }
+
+      if (response.ok) {
+        const rawData = await response.json();
+        console.log('Loaded raw company data for editing:', rawData);
+        console.log('Raw selected_industries from backend:', rawData.selected_industries, 'Type:', typeof rawData.selected_industries);
+        
+        // Transform the data based on entity type to match form structure
+        const transformedData: any = {
+          legal_name: rawData.legal_name,
+          other_names: rawData.other_names,
+          parent_id: rawData.parent_id,
+          living_status: rawData.living_status || 'Active',
+          // Initialize selected_industries as array for all entity types
+          selected_industries: (() => {
+            if (!rawData.selected_industries) return [];
+            if (Array.isArray(rawData.selected_industries)) return rawData.selected_industries;
+            if (typeof rawData.selected_industries === 'string') {
+              try {
+                const parsed = JSON.parse(rawData.selected_industries);
+                return Array.isArray(parsed) ? parsed : [];
+              } catch (e) {
+                console.warn('Failed to parse selected_industries string:', rawData.selected_industries);
+                return [];
+              }
+            }
+            return [];
+          })(),
+        };
+
+        // Handle different entity types
+        if (rawData.group_print_name) {
+          // Group data
+          transformedData.company_group_data_type = 'Group';
+          transformedData.company_group_print_name = rawData.group_print_name;
+        } else if (rawData.division_print_name) {
+          // Division data
+          transformedData.company_group_data_type = 'Division';
+          transformedData.company_group_print_name = rawData.division_print_name;
+          transformedData.parent_type = rawData.parent_type;
+        } else {
+          // Company data - add all company-specific fields
+          transformedData.company_group_data_type = 'Company';
+          transformedData.company_group_print_name = rawData.company_group_print_name;
+          
+          // Operations - convert Y/N to boolean
+          transformedData.operations = {
+            imports: rawData.imports === 'Y',
+            exports: rawData.exports === 'Y',
+            manufacture: rawData.manufacture === 'Y',
+            distribution: rawData.distribution === 'Y',
+            wholesale: rawData.wholesale === 'Y',
+            retail: rawData.retail === 'Y',
+            services: rawData.services === 'Y',
+            online: rawData.online === 'Y',
+            soft_products: rawData.soft_products === 'Y',
+          };
+          
+          // Company details - convert null to "None" for frontend
+          transformedData.ownership_type = rawData.ownership_type || 'None';
+          transformedData.global_operations = rawData.global_operations || 'None';
+          transformedData.founding_year = rawData.founding_year;
+          transformedData.established_day = rawData.established_day;
+          transformedData.established_month = rawData.established_month;
+          transformedData.company_size = rawData.company_size;
+          transformedData.ntn_no = rawData.ntn_no;
+          // Handle websites array - ensure it's always an array
+          transformedData.websites = (() => {
+            if (!rawData.websites) return [''];
+            if (Array.isArray(rawData.websites)) return rawData.websites.length > 0 ? rawData.websites : [''];
+            if (typeof rawData.websites === 'string') {
+              try {
+                const parsed = JSON.parse(rawData.websites);
+                return Array.isArray(parsed) && parsed.length > 0 ? parsed : [''];
+              } catch (e) {
+                return rawData.websites ? [rawData.websites] : [''];
+              }
+            }
+            return [''];
+          })();
+          
+          // Ratings
+          transformedData.company_brand_image = rawData.company_brand_image;
+          transformedData.company_business_volume = rawData.company_business_volume;
+          transformedData.company_financials = rawData.company_financials;
+          transformedData.iisol_relationship = rawData.iisol_relationship;
+        }
+
+        console.log('Transformed data for form:', transformedData);
+        console.log('Final selected_industries for form:', transformedData.selected_industries);
+        setEditCompanyData(transformedData);
+      } else {
+        console.error('Company not found');
+        alert('Company not found');
+        navigate('/company-view');
+      }
+    } catch (error) {
+      console.error('Error loading company for edit:', error);
+      alert('Error loading company data');
+      navigate('/company-view');
+    } finally {
+      setIsLoadingEdit(false);
+    }
+  };
 
   const handleFormSubmit = async (formData: any) => {
     try {
       console.log('🔍 RAW FORM DATA received:', formData);
       console.log('🔍 Form Data Keys:', Object.keys(formData));
-      console.log('🔍 Selected Industries:', formData.selected_industries);
+      console.log('🔍 Selected Industries:', formData.selected_industries, 'Type:', typeof formData.selected_industries, 'Length:', formData.selected_industries?.length);
       console.log('🔍 Ratings:', {
         company_brand_image: formData.company_brand_image,
         company_business_volume: formData.company_business_volume,
@@ -117,18 +303,20 @@ const CompanyPage = () => {
         submitData.online = formData.operations?.online ? "Y" : "N";
         submitData.soft_products = formData.operations?.soft_products ? "Y" : "N";
         
-        // Additional company details
-        submitData.ownership_type = formData.ownership_type;
-        submitData.global_operations = formData.global_operations;
+        // Additional company details - convert "None" to null
+        submitData.ownership_type = formData.ownership_type === 'None' ? null : formData.ownership_type;
+        submitData.global_operations = formData.global_operations === 'None' ? null : formData.global_operations;
         submitData.founding_year = formData.founding_year || null;
         submitData.established_day = formData.established_day || null;
         submitData.established_month = formData.established_month || null;
         submitData.company_size = formData.company_size;
         submitData.ntn_no = formData.ntn_no || null;
-        submitData.website = formData.website || null;
+        // Convert websites array - filter out empty strings and only send if there are valid URLs
+        const validWebsites = formData.websites?.filter(website => website && website.trim()) || [];
+        submitData.websites = validWebsites.length > 0 ? validWebsites : null;
         
-        // Industries
-        submitData.selected_industries = formData.selected_industries;
+        // Industries - convert array to JSON string for database storage
+        submitData.selected_industries = JSON.stringify(formData.selected_industries);
         
         // Ratings
         submitData.company_brand_image = formData.company_brand_image;
@@ -139,6 +327,8 @@ const CompanyPage = () => {
 
       console.log('🚀 TRANSFORMED DATA for backend:', submitData);
       console.log('🚀 Submit Data Keys:', Object.keys(submitData));
+      console.log('🚀 Ownership Type:', submitData.ownership_type, 'Type:', typeof submitData.ownership_type);
+      console.log('🚀 Global Operations:', submitData.global_operations, 'Type:', typeof submitData.global_operations);
       
       // Validate required fields
       const printName = submitData.company_group_print_name || submitData.group_print_name || submitData.division_print_name;
@@ -167,17 +357,39 @@ const CompanyPage = () => {
       }
 
       console.log(`🚀 Submitting ${formData.company_group_data_type} to endpoint: ${apiEndpoint}`);
-      const response = await apiClient.post(apiEndpoint, submitData);
+      
+      let response;
+      if (isEditMode && editId) {
+        // Update existing entity - use correct endpoint format
+        const updateEndpoint = apiEndpoint.endsWith('/') ? `${apiEndpoint}${editId}/` : `${apiEndpoint}${editId}`;
+        console.log(`🔄 Updating ${formData.company_group_data_type} with ID: ${editId} to endpoint: ${updateEndpoint}`);
+        console.log(`🔄 Update payload:`, submitData);
+        response = await apiClient.put(updateEndpoint, submitData);
+      } else {
+        // Create new entity
+        console.log(`➕ Creating new ${formData.company_group_data_type} to endpoint: ${apiEndpoint}`);
+        console.log(`➕ Create payload:`, submitData);
+        response = await apiClient.post(apiEndpoint, submitData);
+      }
       
       if (response.ok) {
         const savedCompany = await response.json();
-        console.log(`${formData.company_group_data_type} saved successfully:`, savedCompany);
+        console.log(`${formData.company_group_data_type} ${isEditMode ? 'updated' : 'saved'} successfully:`, savedCompany);
         
-        // Show success modal
-        setSavedCompanyName(formData.company_group_print_name);
-        setSavedCompanyId(savedCompany.record_id || savedCompany.id);
-        setSavedEntityType(formData.company_group_data_type);
-        setIsSuccessModalOpen(true);
+        // Clear unsaved changes flag on successful save
+        setHasUnsavedChanges(false);
+        setUnsavedChanges(false);
+        
+        if (isEditMode) {
+          // For edit mode, redirect back to view page immediately
+          navigate(`/company/view/${editId}`);
+        } else {
+          // For create mode, show success modal
+          setSavedCompanyName(formData.company_group_print_name);
+          setSavedCompanyId(savedCompany.record_id || savedCompany.id);
+          setSavedEntityType(formData.company_group_data_type);
+          setIsSuccessModalOpen(true);
+        }
       } else {
         const errorText = await response.text();
         console.error('❌ API Error Details:', {
@@ -187,18 +399,47 @@ const CompanyPage = () => {
           url: response.url
         });
         
-        let errorMessage = `Failed to save ${formData.company_group_data_type.toLowerCase()}. `;
+        // Log the raw response first
+        console.error('❌ Raw response text:', errorText);
+        
+        let errorMessage = `Failed to ${isEditMode ? 'update' : 'save'} ${formData.company_group_data_type.toLowerCase()}. `;
+        
+        // Add detailed error information
+        console.error('❌ Complete error details:', {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+          headers: Object.fromEntries(response.headers.entries()),
+          responseBody: errorText
+        });
+        
         try {
           const errorJson = JSON.parse(errorText);
-          if (errorJson.detail) {
+          console.error('❌ Parsed error JSON:', errorJson);
+          
+          if (errorJson.detail && Array.isArray(errorJson.detail)) {
+            // Handle Pydantic validation errors
+            const validationErrors = errorJson.detail.map(err => {
+              const field = err.loc ? err.loc.join('.') : 'Unknown field';
+              return `${field}: ${err.msg}`;
+            });
+            errorMessage += validationErrors.join('\n');
+          } else if (errorJson.detail) {
             errorMessage += errorJson.detail;
+          } else if (errorJson.message) {
+            errorMessage += errorJson.message;
+          } else if (Array.isArray(errorJson)) {
+            errorMessage += errorJson.map(err => typeof err === 'string' ? err : JSON.stringify(err, null, 2)).join(', ');
           } else {
-            errorMessage += errorText;
+            // Better formatting for complex objects
+            errorMessage += JSON.stringify(errorJson, null, 2);
           }
         } catch (e) {
-          errorMessage += `Server error: ${response.status} ${response.statusText}`;
+          console.error('❌ Error parsing JSON:', e);
+          errorMessage += `Server error: ${response.status} ${response.statusText}\nResponse: ${errorText.substring(0, 500)}`;
         }
         
+        console.error('❌ Final error message:', errorMessage);
         alert(errorMessage);
       }
     } catch (error) {
@@ -218,19 +459,56 @@ const CompanyPage = () => {
     }
   };
 
+  // Show loading screen while loading edit data
+  if (isEditMode && isLoadingEdit) {
+    return (
+      <>
+        <PageMeta
+          title="Loading..."
+          description="Loading company data for editing"
+        />
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <h3 className="text-lg font-medium mb-2">Loading Company Data</h3>
+            <p className="text-gray-600 dark:text-gray-400">Please wait while we load the company information...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <PageMeta
-        title="Add Company"
-        description="Create new companies, groups, and divisions"
+        title={isEditMode ? "Edit Company" : "Add Company"}
+        description={isEditMode ? "Edit existing companies, groups, and divisions" : "Create new companies, groups, and divisions"}
       />
       <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">Company Page</h1>
+        <h1 className="text-2xl font-bold mb-4">{isEditMode ? 'Edit Company' : 'Company Page'}</h1>
       </div>
-      <CompanyAddForm 
-        onSubmit={handleFormSubmit}
-        onCancel={() => navigate('/company')}
-      />
+      {/* Only render form when not in edit mode OR when edit data is loaded */}
+      {(!isEditMode || editCompanyData) ? (
+        <CompanyAddForm 
+          key={isEditMode ? `edit-${editId}` : 'create'} // Force re-render on mode change
+          initialData={editCompanyData}
+          isEditMode={isEditMode}
+          onSubmit={handleFormSubmit}
+          onCancel={() => navigateWithConfirm(isEditMode ? `/company/view/${editId}` : '/company')}
+          onChange={() => {
+            if (isEditMode && !hasUnsavedChanges) {
+              setHasUnsavedChanges(true);
+            }
+          }}
+        />
+      ) : (
+        <div className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 dark:text-gray-400">Loading form data...</p>
+          </div>
+        </div>
+      )}
       
       {/* Success Modal */}
       <SuccessModal 

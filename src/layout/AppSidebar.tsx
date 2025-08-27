@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Link, useLocation } from "react-router";
+import { useLocation } from "react-router";
+import SafeLink from "../components/SafeLink";
 
 // Assume these icons are imported from an icon library
 import {
@@ -217,7 +218,7 @@ const AppSidebar: React.FC = () => {
             </button>
           ) : (
             nav.path && (
-              <Link
+              <SafeLink
                 to={nav.path}
                 className={`menu-item group ${
                   isActive(nav.path) ? "menu-item-active" : "menu-item-inactive"
@@ -235,7 +236,7 @@ const AppSidebar: React.FC = () => {
                 {(isExpanded || isHovered || isMobileOpen) && (
                   <span className="menu-item-text">{nav.name}</span>
                 )}
-              </Link>
+              </SafeLink>
             )
           )}
           {nav.subItems && (isExpanded || isHovered || isMobileOpen) && (
@@ -254,7 +255,7 @@ const AppSidebar: React.FC = () => {
               <ul className="mt-2 space-y-1 ml-9">
                 {nav.subItems.map((subItem) => (
                   <li key={subItem.name}>
-                    <Link
+                    <SafeLink
                       to={subItem.path}
                       className={`menu-dropdown-item ${
                         isActive(subItem.path)
@@ -287,7 +288,7 @@ const AppSidebar: React.FC = () => {
                           </span>
                         )}
                       </span>
-                    </Link>
+                    </SafeLink>
                   </li>
                 ))}
               </ul>
@@ -318,7 +319,7 @@ const AppSidebar: React.FC = () => {
           !isExpanded && !isHovered ? "lg:justify-center" : "justify-start"
         }`}
       >
-        <Link to="/">
+        <SafeLink to="/">
           {isExpanded || isHovered || isMobileOpen ? (
             <>
               <img
@@ -344,7 +345,7 @@ const AppSidebar: React.FC = () => {
               height={32}
             />
           )}
-        </Link>
+        </SafeLink>
       </div>
       <div className="flex flex-col overflow-y-auto duration-300 ease-linear no-scrollbar">
         <nav className="mb-6">

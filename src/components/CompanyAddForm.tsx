@@ -23,14 +23,14 @@ interface CompanyFormData {
   
   // Status & Details (one line)
   living_status: 'Active' | 'Inactive' | 'Dormant' | 'In Process';
-  ownership_type: 'Individual' | 'Sole Proprietorship' | 'Association of Persons' | 'Public Limited Company' | 'Government' | 'Semi Government';
-  global_operations: 'Local' | 'National' | 'Multi National';
+  ownership_type: 'None' | 'Individual' | 'Sole Proprietorship' | 'Association of Persons' | 'Public Limited Company' | 'Government' | 'Semi Government';
+  global_operations: 'None' | 'Local' | 'National' | 'Multi National';
   founding_year: string;
   established_day: string;
   established_month: string;
   company_size: number | null; // 1-5 scale
   ntn_no: string;
-  website: string;
+  websites: string[];
   
   
   // Operations
@@ -77,14 +77,14 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
     other_names: '',
     parent_id: null,
     living_status: 'Active',
-    ownership_type: 'Individual',
-    global_operations: 'Local',
+    ownership_type: 'None',
+    global_operations: 'None',
     founding_year: '',
     established_day: '',
     established_month: '',
     company_size: null,
     ntn_no: '',
-    website: '',
+    websites: [''],
     operations: {
       imports: false,
       exports: false,
@@ -392,6 +392,7 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
 
   // Get ownership type options
   const getOwnershipTypeOptions = () => [
+    { value: 'None', label: 'None', icon: '❓', description: 'Not specified' },
     { value: 'Individual', label: 'Individual', icon: '👤', description: 'Single person ownership' },
     { value: 'Sole Proprietorship', label: 'Sole Proprietorship', icon: '🏪', description: 'Single owner business' },
     { value: 'Association of Persons', label: 'Association of Persons', icon: '👥', description: 'Group of individuals' },
@@ -402,6 +403,7 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
 
   // Get global operations options
   const getGlobalOperationsOptions = () => [
+    { value: 'None', label: 'None', icon: '❓', description: 'Not specified' },
     { value: 'Local', label: 'Local', icon: '🏘️', description: 'Local operations only' },
     { value: 'National', label: 'National', icon: '🗺️', description: 'Nationwide operations' },
     { value: 'Multi National', label: 'Multi National', icon: '🌍', description: 'International operations' }
@@ -926,6 +928,7 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
                       theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                     }`}
                   >
+                    <option value="None">None</option>
                     <option value="Individual">Individual</option>
                     <option value="Sole Proprietorship">Sole Prop.</option>
                     <option value="Association of Persons">AOP</option>
@@ -943,6 +946,7 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
                       theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                     }`}
                   >
+                    <option value="None">None</option>
                     <option value="Local">Local</option>
                     <option value="National">National</option>
                     <option value="Multi National">Multi National</option>
@@ -1027,16 +1031,61 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block text-xs mb-1">Website</label>
-                  <input
-                    type="url"
-                    value={formData.website}
-                    onChange={(e) => handleInputChange('website', e.target.value)}
-                    className={`w-full px-1 py-1 rounded border text-xs ${
-                      theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
-                    }`}
-                    placeholder="https://example.com"
-                  />
+                  <label className="block text-xs mb-1">
+                    Websites ({formData.websites.filter(w => w.trim()).length})
+                  </label>
+                  <div className="space-y-1">
+                    {formData.websites.map((website, index) => (
+                      <div key={index} className="flex items-center gap-1">
+                        <input
+                          type="url"
+                          value={website}
+                          onChange={(e) => {
+                            const newWebsites = [...formData.websites];
+                            newWebsites[index] = e.target.value;
+                            handleInputChange('websites', newWebsites);
+                          }}
+                          className={`flex-1 px-1 py-1 rounded border text-xs ${
+                            theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
+                          }`}
+                          placeholder="https://example.com"
+                        />
+                        
+                        {/* Show Add button on the last website */}
+                        {index === formData.websites.length - 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleInputChange('websites', [...formData.websites, '']);
+                            }}
+                            className={`w-6 h-6 flex items-center justify-center rounded border text-xs ${
+                              theme === 'dark'
+                                ? 'bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600'
+                                : 'bg-gray-50 border-gray-300 text-gray-600 hover:bg-gray-100'
+                            }`}
+                            title="Add another website"
+                          >
+                            +
+                          </button>
+                        )}
+                        
+                        {/* Show Remove button if more than one website */}
+                        {formData.websites.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const newWebsites = formData.websites.filter((_, i) => i !== index);
+                              handleInputChange('websites', newWebsites);
+                            }}
+                            className="w-6 h-6 flex items-center justify-center text-red-500 hover:text-red-700 text-xs"
+                            title="Remove website"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </>
             )}
