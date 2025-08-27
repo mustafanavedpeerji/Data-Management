@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import { useNavigation } from '../context/NavigationContext';
 import apiClient from '../config/apiClient';
 
 // Types
@@ -68,9 +69,10 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
   onCancel 
 }) => {
   const { theme } = useTheme();
+  const { setUnsavedChanges } = useNavigation();
   
-  // Form State
-  const [formData, setFormData] = useState<CompanyFormData>({
+  // Initial form data for comparison
+  const initialFormData: CompanyFormData = {
     company_group_data_type: 'Company',
     company_group_print_name: '',
     legal_name: '',
@@ -102,7 +104,10 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
     company_financials: null,
     iisol_relationship: null,
     ...initialData
-  });
+  };
+
+  // Form State
+  const [formData, setFormData] = useState<CompanyFormData>(initialFormData);
   
   // State for dropdowns and data
   const [allIndustries, setAllIndustries] = useState<Industry[]>([]);
@@ -117,6 +122,23 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
   const [selectedMainIndustry, setSelectedMainIndustry] = useState<Industry | null>(null);
   const [selectedSubIndustry, setSelectedSubIndustry] = useState<Industry | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Function to check if form has been modified
+  const isFormDirty = () => {
+    return JSON.stringify(formData) !== JSON.stringify(initialFormData);
+  };
+
+  // Effect to track form changes
+  useEffect(() => {
+    setUnsavedChanges(isFormDirty());
+  }, [formData, setUnsavedChanges]);
+
+  // Cleanup effect - reset unsaved changes when component unmounts
+  useEffect(() => {
+    return () => {
+      setUnsavedChanges(false);
+    };
+  }, [setUnsavedChanges]);
 
   // Load initial data
   useEffect(() => {
@@ -372,11 +394,21 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
     try {
       if (onSubmit) {
         await onSubmit(formData);
+        // Reset unsaved changes flag after successful submission
+        setUnsavedChanges(false);
       }
     } catch (error) {
       console.error('Form submission error:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Handle cancel with unsaved changes reset
+  const handleCancel = () => {
+    setUnsavedChanges(false);
+    if (onCancel) {
+      onCancel();
     }
   };
 
@@ -1220,7 +1252,7 @@ const CompanyAddForm: React.FC<CompanyAddFormProps> = ({
           {onCancel && (
             <button
               type="button"
-              onClick={onCancel}
+              onClick={handleCancel}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
                 theme === 'dark'
                   ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 border border-gray-600'
