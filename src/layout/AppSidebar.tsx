@@ -43,6 +43,11 @@ const navItems: NavItem[] = [
   path: "/industry", // yeh route tumhare IndustryPage.tsx ke liye
   },
   {
+  icon: <ListIcon />,
+  name: "Audit Logs",
+  path: "/audit-logs",
+  },
+  {
     icon: <GridIcon />,
     name: "Dashboard",
     subItems: [{ name: "Ecommerce", path: "/", pro: false }],

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import apiClient from '../config/apiClient';
+import AuditLogViewer from './AuditLogViewer';
 
 interface Industry {
   id: number;
@@ -608,6 +609,20 @@ const CompanyView: React.FC<CompanyViewProps> = ({
                     </div>
                   </div>
                 )}
+
+                {/* Audit Trail */}
+                <div>
+                  <h2 className={`text-sm font-semibold uppercase tracking-wide mb-3 ${
+                    theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    Activity History
+                  </h2>
+                  <AuditLogViewer 
+                    table_name="companies" 
+                    record_id={companyId} 
+                    maxHeight="300px"
+                  />
+                </div>
               </div>
             </div>
           </div>
