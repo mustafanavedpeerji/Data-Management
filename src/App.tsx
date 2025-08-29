@@ -22,6 +22,7 @@ import IndustryPage from './pages/IndustryPage';
 import CompanyPage from "./pages/CompanyPage";
 import CompanyViewPage from "./pages/CompanyViewPage";
 import CompanyListPage from "./pages/CompanyListPage";
+import PersonPage from "./pages/PersonPage";
 import AuditLogsPage from "./pages/AuditLogsPage";
 
 export default function App() {
@@ -38,6 +39,8 @@ export default function App() {
             <Route path="/company/edit/:id" element={<CompanyPage />} />
             <Route path="/company/view/:id" element={<CompanyViewPage />} />
             <Route path="/company-view" element={<CompanyListPage />} />
+            <Route path="/person" element={<PersonPage />} />
+            <Route path="/person/edit/:id" element={<PersonPage />} />
             <Route path="/audit-logs" element={<AuditLogsPage />} />
 
             <Route index path="/" element={<Home />} />

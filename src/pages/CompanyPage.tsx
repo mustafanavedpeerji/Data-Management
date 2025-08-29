@@ -465,14 +465,11 @@ const CompanyPage = () => {
   }
 
   return (
-    <>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <PageMeta
         title={isEditMode ? "Edit Company" : "Add Company"}
         description={isEditMode ? "Edit existing companies, groups, and divisions" : "Create new companies, groups, and divisions"}
       />
-      <div className="p-6">
-        <h1 className="text-2xl font-bold mb-4">{isEditMode ? 'Edit Company' : 'Company Page'}</h1>
-      </div>
       {/* Only render form when not in edit mode OR when edit data is loaded */}
       {(!isEditMode || editCompanyData) ? (
         <CompanyAddForm 
@@ -503,7 +500,7 @@ const CompanyPage = () => {
         companyName={savedCompanyName}
         entityType={savedEntityType}
       />
-    </>
+    </div>
   );
 };
 
