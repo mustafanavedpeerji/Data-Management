@@ -198,17 +198,11 @@ const CompanyPage = () => {
           transformedData.company_group_data_type = 'Company';
           transformedData.company_group_print_name = rawData.company_group_print_name;
           
-          // Operations - convert Y/N to boolean
-          transformedData.operations = {
-            imports: rawData.imports === 'Y',
-            exports: rawData.exports === 'Y',
-            manufacture: rawData.manufacture === 'Y',
-            distribution: rawData.distribution === 'Y',
-            wholesale: rawData.wholesale === 'Y',
-            retail: rawData.retail === 'Y',
-            services: rawData.services === 'Y',
-            online: rawData.online === 'Y',
-            soft_products: rawData.soft_products === 'Y',
+          // Operations - use the operations object from backend
+          transformedData.operations = rawData.operations || {
+            imports: false, exports: false, manufacture: false,
+            distribution: false, wholesale: false, retail: false,
+            services: false, online: false, soft_products: false,
           };
           
           // Company details - convert null to "None" for frontend
@@ -292,16 +286,8 @@ const CompanyPage = () => {
         submitData.company_group_print_name = formData.company_group_print_name;
         submitData.company_group_data_type = formData.company_group_data_type;
         
-        // Convert operations boolean to "Y"/"N" format
-        submitData.imports = formData.operations?.imports ? "Y" : "N";
-        submitData.exports = formData.operations?.exports ? "Y" : "N";
-        submitData.manufacture = formData.operations?.manufacture ? "Y" : "N";
-        submitData.distribution = formData.operations?.distribution ? "Y" : "N";
-        submitData.wholesale = formData.operations?.wholesale ? "Y" : "N";
-        submitData.retail = formData.operations?.retail ? "Y" : "N";
-        submitData.services = formData.operations?.services ? "Y" : "N";
-        submitData.online = formData.operations?.online ? "Y" : "N";
-        submitData.soft_products = formData.operations?.soft_products ? "Y" : "N";
+        // Send operations as object for backend processing
+        submitData.operations = formData.operations;
         
         // Additional company details - convert "None" to null
         submitData.ownership_type = formData.ownership_type === 'None' ? null : formData.ownership_type;
