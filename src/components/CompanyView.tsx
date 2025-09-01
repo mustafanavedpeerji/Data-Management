@@ -12,6 +12,7 @@ interface Industry {
 
 interface CompanyData {
   record_id?: string;
+  uid?: string;
   company_group_data_type: 'Group' | 'Company' | 'Division';
   company_group_print_name: string;
   legal_name: string;
@@ -412,6 +413,16 @@ const CompanyView: React.FC<CompanyViewProps> = ({
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-3">
+                      {company.uid && (
+                        <div>
+                          <dt className={`text-sm font-medium ${
+                            theme === 'dark' ? 'text-gray-400' : 'text-gray-600'
+                          }`}>Company UID</dt>
+                          <dd className={`text-sm mt-1 font-mono ${
+                            theme === 'dark' ? 'text-gray-200' : 'text-gray-900'
+                          }`}>{company.uid}</dd>
+                        </div>
+                      )}
                       {company.legal_name && company.legal_name !== company.company_group_print_name && (
                         <div>
                           <dt className={`text-sm font-medium ${
