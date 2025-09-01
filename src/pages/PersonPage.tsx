@@ -77,8 +77,13 @@ const PersonPage: React.FC = () => {
           religion: rawData.religion || '',
           community: rawData.community || '',
           base_city: rawData.base_city || '',
-          birth_city: rawData.birth_city || '',
+          attached_companies: rawData.attached_companies || [],
+          department: rawData.department || '',
+          designation: rawData.designation || '',
           date_of_birth: rawData.date_of_birth || '',
+          birth_day: '',
+          birth_month: '',
+          birth_year: '',
           age_bracket: rawData.age_bracket || '',
           nic: rawData.nic || ''
         };
@@ -121,7 +126,9 @@ const PersonPage: React.FC = () => {
         religion: formData.religion || null,
         community: formData.community || null,
         base_city: formData.base_city || null,
-        birth_city: formData.birth_city || null,
+        attached_companies: formData.attached_companies || [],
+        department: formData.department || null,
+        designation: formData.designation || null,
         date_of_birth: formData.date_of_birth || null,
         age_bracket: formData.age_bracket || null,
         nic: formData.nic || null
@@ -150,7 +157,7 @@ const PersonPage: React.FC = () => {
       } else {
         // Create new person
         console.log('Creating new person');
-        response = await apiClient.post('/persons', submitData);
+        response = await apiClient.post('/persons/', submitData);
       }
 
       if (response.ok) {
@@ -162,19 +169,35 @@ const PersonPage: React.FC = () => {
         setIsSuccessModalOpen(true);
       } else {
         // Handle error response
+        console.error('API Error Response:', response);
+        console.error('Response Status:', response.status);
+        console.error('Response StatusText:', response.statusText);
+        
         const errorText = await response.text();
+        console.error('Error Response Text:', errorText);
+        
         let errorMessage = `Failed to ${isEditMode ? 'update' : 'create'} person.\n`;
         
         try {
           const errorJson = JSON.parse(errorText);
+          console.error('Parsed Error JSON:', errorJson);
           if (errorJson.detail) {
-            errorMessage += errorJson.detail;
+            if (Array.isArray(errorJson.detail)) {
+              // Validation errors
+              errorMessage += errorJson.detail.map((err: any) => 
+                `${err.loc?.join('.') || 'Field'}: ${err.msg}`
+              ).join('\n');
+            } else {
+              errorMessage += errorJson.detail;
+            }
           } else {
             errorMessage += errorText;
           }
         } catch {
-          errorMessage += `Server error: ${response.status} ${response.statusText}`;
+          errorMessage += `Server error: ${response.status} ${response.statusText}\n${errorText}`;
         }
+        
+        console.error('Final Error Message:', errorMessage);
         alert(errorMessage);
         return;
       }

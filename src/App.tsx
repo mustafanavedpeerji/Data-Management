@@ -23,6 +23,8 @@ import CompanyPage from "./pages/CompanyPage";
 import CompanyViewPage from "./pages/CompanyViewPage";
 import CompanyListPage from "./pages/CompanyListPage";
 import PersonPage from "./pages/PersonPage";
+import PersonListPage from "./pages/PersonListPage";
+import PersonViewPage from "./pages/PersonViewPage";
 import AuditLogsPage from "./pages/AuditLogsPage";
 
 export default function App() {
@@ -41,6 +43,8 @@ export default function App() {
             <Route path="/company-view" element={<CompanyListPage />} />
             <Route path="/person" element={<PersonPage />} />
             <Route path="/person/edit/:id" element={<PersonPage />} />
+            <Route path="/person/view/:id" element={<PersonViewPage />} />
+            <Route path="/person-view" element={<PersonListPage />} />
             <Route path="/audit-logs" element={<AuditLogsPage />} />
 
             <Route index path="/" element={<Home />} />
