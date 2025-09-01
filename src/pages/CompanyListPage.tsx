@@ -6,6 +6,7 @@ import apiClient from '../config/apiClient';
 
 interface Company {
   record_id: string;
+  uid?: string;
   company_group_print_name: string;
   company_group_data_type: 'Company' | 'Group' | 'Division';
   parent_id: string | null;
@@ -323,6 +324,15 @@ const CompanyListPage = () => {
                   <h3 className={`font-medium text-sm ${theme === 'dark' ? 'text-white' : 'text-gray-900'} truncate`}>
                     {company.company_group_print_name}
                   </h3>
+                  {company.uid && (
+                    <span className={`px-2 py-0.5 text-xs rounded font-mono ${
+                      theme === 'dark' 
+                        ? 'bg-blue-900/20 text-blue-400' 
+                        : 'bg-blue-100 text-blue-700'
+                    }`}>
+                      {company.uid}
+                    </span>
+                  )}
                   <span className={`px-2 py-0.5 text-xs rounded ${typeConfig.bgColor} ${typeConfig.color}`}>
                     {company.company_group_data_type}
                   </span>
