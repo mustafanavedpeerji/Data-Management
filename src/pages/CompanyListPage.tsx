@@ -314,13 +314,17 @@ const CompanyListPage = () => {
               )}
 
               {/* Company UID Badge */}
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold font-mono ${
-                company.uid 
-                  ? (theme === 'dark' ? 'bg-blue-900/20 text-blue-400' : 'bg-blue-100 text-blue-700')
-                  : `${typeConfig.bgColor} ${typeConfig.color}`
-              }`}>
-                {company.uid || company.company_group_data_type.charAt(0)}
-              </div>
+              {company.uid ? (
+                <div className={`px-2 py-1 rounded text-xs font-semibold font-mono ${
+                  theme === 'dark' ? 'bg-blue-900/20 text-blue-400' : 'bg-blue-100 text-blue-700'
+                }`}>
+                  {company.uid}
+                </div>
+              ) : (
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${typeConfig.bgColor} ${typeConfig.color}`}>
+                  {company.company_group_data_type.charAt(0)}
+                </div>
+              )}
 
               {/* Company Details */}
               <div className="flex-1 min-w-0">
