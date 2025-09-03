@@ -10,9 +10,11 @@ import {
   GridIcon,
   HorizontaLDots,
   ListIcon,
+  MailIcon,
   PageIcon,
   PieChartIcon,
   PlugInIcon,
+  PlusIcon,
   TableIcon,
   UserCircleIcon,
 } from "../icons";
@@ -56,6 +58,16 @@ const navItems: NavItem[] = [
   icon: <ListIcon />,
   name: "Audit Logs",
   path: "/audit-logs",
+  },
+  {
+  icon: <MailIcon />,
+  name: "Emails",
+  path: "/emails",
+  },
+  {
+  icon: <PlusIcon />,
+  name: "Add Email",
+  path: "/emails/add",
   },
   {
     icon: <GridIcon />,

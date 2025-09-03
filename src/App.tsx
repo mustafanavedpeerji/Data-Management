@@ -26,6 +26,9 @@ import PersonPage from "./pages/PersonPage";
 import PersonListPage from "./pages/PersonListPage";
 import PersonViewPage from "./pages/PersonViewPage";
 import AuditLogsPage from "./pages/AuditLogsPage";
+import EmailPage from "./pages/EmailPage";
+import EmailAddPage from "./pages/EmailAddPage";
+import EmailEditPage from "./pages/EmailEditPage";
 
 export default function App() {
   return (
@@ -46,6 +49,9 @@ export default function App() {
             <Route path="/person/view/:id" element={<PersonViewPage />} />
             <Route path="/person-view" element={<PersonListPage />} />
             <Route path="/audit-logs" element={<AuditLogsPage />} />
+            <Route path="/emails" element={<EmailPage />} />
+            <Route path="/emails/add" element={<EmailAddPage />} />
+            <Route path="/emails/edit/:id" element={<EmailEditPage />} />
 
             <Route index path="/" element={<Home />} />
 
