@@ -174,16 +174,37 @@ const PersonAddForm: React.FC<PersonAddFormProps> = ({
   const [companySearch, setCompanySearch] = useState('');
   const [loadingCompanies, setLoadingCompanies] = useState(false);
 
-  // Track form changes for unsaved changes warning
+  // Track if initial data has been loaded
+  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
+  const [initialFormData, setInitialFormData] = useState<PersonFormData | null>(null);
+
+  // Set initial data when component loads
   useEffect(() => {
-    if (onChange) {
-      onChange();
+    if (!initialDataLoaded && formData) {
+      setInitialFormData({ ...formData });
+      setInitialDataLoaded(true);
     }
-    if (!unsavedChanges) {
-      setUnsavedChangesLocal(true);
-      setUnsavedChanges(true);
+  }, [formData, initialDataLoaded]);
+
+  // Track form changes for unsaved changes warning (only after initial load)
+  useEffect(() => {
+    if (initialDataLoaded && initialFormData) {
+      // Check if current formData differs from initialFormData
+      const hasChanges = JSON.stringify(formData) !== JSON.stringify(initialFormData);
+      
+      if (hasChanges && onChange) {
+        onChange();
+      }
+      
+      if (hasChanges && !unsavedChanges) {
+        setUnsavedChangesLocal(true);
+        setUnsavedChanges(true);
+      } else if (!hasChanges && unsavedChanges) {
+        setUnsavedChangesLocal(false);
+        setUnsavedChanges(false);
+      }
     }
-  }, [formData, onChange, unsavedChanges, setUnsavedChanges]);
+  }, [formData, onChange, unsavedChanges, setUnsavedChanges, initialDataLoaded, initialFormData]);
 
   // Auto-calculate age bracket based on date of birth
   const calculateAgeBracket = (birthDate: string): string => {

@@ -231,8 +231,8 @@ const PersonPage: React.FC = () => {
   // Handle success modal close
   const handleSuccessModalClose = () => {
     setIsSuccessModalOpen(false);
-    // Navigate to persons list after successful creation/update
-    navigateWithConfirm('/person');
+    // Navigate directly without confirmation since we've already saved successfully
+    navigate('/person');
   };
 
   // If we're still loading form data, show loading state
@@ -255,7 +255,7 @@ const PersonPage: React.FC = () => {
           onSubmit={handleFormSubmit}
           onCancel={() => navigateWithConfirm(isEditMode ? `/person/view/${editId}` : '/person')}
           onChange={() => {
-            if (isEditMode && !hasUnsavedChanges) {
+            if (!hasUnsavedChanges) {
               setHasUnsavedChanges(true);
             }
           }}
