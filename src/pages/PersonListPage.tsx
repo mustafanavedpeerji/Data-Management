@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router';
 import PageMeta from '../components/common/PageMeta';
 import { useTheme } from '../context/ThemeContext';
+import { useNavigation } from '../context/NavigationContext';
 import apiClient from '../config/apiClient';
 
 interface Person {
@@ -31,6 +32,7 @@ interface Company {
 const PersonListPage = () => {
   const { theme } = useTheme();
   const navigate = useNavigate();
+  const { setUnsavedChanges } = useNavigation();
   const [persons, setPersons] = useState<Person[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -77,7 +79,9 @@ const PersonListPage = () => {
 
   useEffect(() => {
     fetchPersons();
-  }, [fetchPersons]);
+    // Clear any unsaved changes flag since this is a view-only page
+    setUnsavedChanges(false);
+  }, [fetchPersons, setUnsavedChanges]);
 
   // Filter persons based on search term
   const filteredPersons = persons.filter(person => {
