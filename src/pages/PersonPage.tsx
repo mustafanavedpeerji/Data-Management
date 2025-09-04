@@ -49,6 +49,7 @@ const PersonPage: React.FC = () => {
   const [formData, setFormData] = useState<any>(null);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [savedPersonId, setSavedPersonId] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   const isEditMode = Boolean(id);
@@ -164,6 +165,10 @@ const PersonPage: React.FC = () => {
         const savedPerson = await response.json();
         console.log(`Person ${isEditMode ? 'updated' : 'created'} successfully:`, savedPerson);
         
+        // Store the saved person ID for navigation
+        const personId = savedPerson.person_id || savedPerson.record_id;
+        setSavedPersonId(personId ? String(personId) : null);
+        
         setSuccessMessage(`Person ${isEditMode ? 'updated' : 'added'} successfully!`);
         setHasUnsavedChanges(false);
         setIsSuccessModalOpen(true);
@@ -232,7 +237,16 @@ const PersonPage: React.FC = () => {
   const handleSuccessModalClose = () => {
     setIsSuccessModalOpen(false);
     // Navigate directly without confirmation since we've already saved successfully
-    navigate('/person');
+    if (isEditMode && editId) {
+      // After edit, go to person view page
+      navigate(`/person/view/${editId}`);
+    } else if (savedPersonId) {
+      // After add, go to the new person's view page
+      navigate(`/person/view/${savedPersonId}`);
+    } else {
+      // Fallback to person list page
+      navigate('/person-view');
+    }
   };
 
   // If we're still loading form data, show loading state

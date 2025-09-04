@@ -62,6 +62,8 @@ const PersonView: React.FC<PersonViewProps> = ({
           item.company_group_data_type === 'Company'
         );
         setCompanies(actualCompanies);
+      } else {
+        console.error('Failed to load companies:', response.status, response.statusText);
       }
     } catch (error) {
       console.error('Failed to load companies:', error);
@@ -83,7 +85,9 @@ const PersonView: React.FC<PersonViewProps> = ({
         setPerson(data);
         setError('');
       } else {
-        setError('Person not found');
+        const errorText = await response.text();
+        console.error('Failed to load person:', response.status, response.statusText, errorText);
+        setError(`Failed to load person: ${response.status} ${response.statusText}`);
       }
     } catch (error) {
       setError('Failed to load person data');
