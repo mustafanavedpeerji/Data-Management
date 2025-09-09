@@ -94,6 +94,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
   const [personSearch, setPersonSearch] = useState('');
   const [selectedCompanyForDept, setSelectedCompanyForDept] = useState<Company | null>(null);
   const [departmentSearch, setDepartmentSearch] = useState('');
+  const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
   const [currentAssociationIndex, setCurrentAssociationIndex] = useState(-1);
 
@@ -299,6 +300,8 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                 type="button"
                 onClick={() => {
                   loadCompanies();
+                  setSelectedDepartments([]);
+                  setSelectedCompanyForDept(null);
                   setShowCompanyModal(true);
                 }}
                 className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-md min-h-[44px]"
@@ -588,30 +591,63 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                       .filter(dept => 
                         dept.toLowerCase().includes(departmentSearch.toLowerCase())
                       )
-                      .map((department) => (
+                      .map((department) => {
+                        const isSelected = selectedDepartments.includes(department);
+                        return (
                         <div
                           key={department}
-                          className={`p-2 sm:p-3 border-b cursor-pointer transition-colors min-h-[44px] flex items-center ${
-                            theme === 'dark' ? 'hover:bg-green-900/20 border-gray-700' : 'hover:bg-green-50 border-gray-200'
+                          className={`p-2 sm:p-3 border-b cursor-pointer transition-colors min-h-[44px] flex items-center justify-between ${
+                            isSelected 
+                              ? theme === 'dark' ? 'bg-green-900/30 border-green-700' : 'bg-green-100 border-green-300'
+                              : theme === 'dark' ? 'hover:bg-green-900/20 border-gray-700' : 'hover:bg-green-50 border-gray-200'
                           }`}
                           onClick={() => {
-                            const newAssociation: EmailAssociation = {
-                              company_id: selectedCompanyForDept?.record_id,
-                              department
-                            };
-                            setAssociations(prev => [...prev, newAssociation]);
-                            setSelectedCompanyForDept(null);
-                            setShowCompanyModal(false);
+                            if (isSelected) {
+                              // Remove from selection
+                              setSelectedDepartments(prev => prev.filter(d => d !== department));
+                            } else {
+                              // Add to selection
+                              setSelectedDepartments(prev => [...prev, department]);
+                            }
                           }}
                         >
                           <div className="text-xs sm:text-sm truncate">{department}</div>
+                          {isSelected && (
+                            <svg className="w-4 h-4 text-green-600 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
                         </div>
-                      ))}
+                        );
+                      })}
                   </div>
                 </div>
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row justify-between gap-2 pt-3 border-t border-gray-200 dark:border-gray-600">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Add selected departments with company
+                      if (selectedDepartments.length > 0 && selectedCompanyForDept) {
+                        selectedDepartments.forEach(department => {
+                          const newAssociation: EmailAssociation = {
+                            company_id: selectedCompanyForDept.record_id,
+                            department
+                          };
+                          setAssociations(prev => [...prev, newAssociation]);
+                        });
+                      }
+                      setSelectedDepartments([]);
+                      setSelectedCompanyForDept(null);
+                      setShowCompanyModal(false);
+                    }}
+                    className="px-3 sm:px-4 py-2 sm:py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs sm:text-sm transition-colors min-h-[44px] flex items-center justify-center"
+                    disabled={selectedDepartments.length === 0}
+                  >
+                    <span className="hidden sm:inline">✅ Add Selected Departments ({selectedDepartments.length})</span>
+                    <span className="sm:hidden">✅ Add ({selectedDepartments.length})</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => {
@@ -626,6 +662,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                           };
                           setAssociations(prev => [...prev, newAssociation]);
                           setDepartmentSearch('');
+                          setSelectedDepartments([]);
                           setSelectedCompanyForDept(null);
                           setShowCompanyModal(false);
                         }
@@ -640,6 +677,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                   <button
                     type="button"
                     onClick={() => {
+                      setSelectedDepartments([]);
                       setSelectedCompanyForDept(null);
                       setShowCompanyModal(false);
                     }}
