@@ -5,8 +5,6 @@ import apiClient from '../config/apiClient';
 
 interface EmailFormData {
   email_address: string;
-  email_type: string;
-  description: string;
   is_active: 'Active' | 'Inactive';
 }
 
@@ -14,7 +12,6 @@ interface EmailAssociation {
   company_id?: number;
   department?: string;
   person_id?: number;
-  association_type?: string;
   notes?: string;
 }
 

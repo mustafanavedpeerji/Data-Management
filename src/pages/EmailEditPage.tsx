@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router';
+import { useParams } from 'react-router-dom';
 import { useNavigation } from '../context/NavigationContext';
 import EmailAddForm from '../components/EmailAddForm';
 import apiClient from '../config/apiClient';
 
 interface EmailFormData {
   email_address: string;
-  email_type: string;
-  description: string;
   is_active: 'Active' | 'Inactive';
 }
 
@@ -21,7 +19,7 @@ interface EmailAssociation {
 
 const EmailEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { navigate } = useNavigation();
+  const { navigateWithConfirm } = useNavigation();
   const [loading, setLoading] = useState(false);
   const [initialData, setInitialData] = useState<Partial<EmailFormData>>({});
   const [dataLoading, setDataLoading] = useState(true);
@@ -33,18 +31,20 @@ const EmailEditPage: React.FC = () => {
       
       try {
         const response = await apiClient.get(`/emails/${id}`);
-        const email = response.data;
-        
-        setInitialData({
-          email_address: email.email_address,
-          email_type: email.email_type || 'business',
-          description: email.description || '',
-          is_active: email.is_active || 'Active'
-        });
+        if (response.ok) {
+          const email = await response.json();
+          
+          setInitialData({
+            email_address: email.email_address,
+            is_active: email.is_active || 'Active'
+          });
+        } else {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
       } catch (error) {
         console.error('Error loading email:', error);
         alert('Error loading email data');
-        navigate('/emails');
+        navigateWithConfirm('/emails');
       } finally {
         setDataLoading(false);
       }
@@ -59,20 +59,27 @@ const EmailEditPage: React.FC = () => {
     setLoading(true);
     try {
       // Update email data
-      await apiClient.put(`/emails/${id}`, formData);
+      const response = await apiClient.put(`/emails/${id}`, formData);
       
-      // For associations, we would need additional endpoints to manage them
-      // This is a simplified version - in production you might want separate endpoints
-      // to add/update/delete associations
-      
-      console.log('Email updated successfully');
-      navigate('/emails');
+      if (response.ok) {
+        console.log('Email updated successfully');
+        navigateWithConfirm('/emails');
+      } else {
+        const errorData = await response.json().catch(() => null);
+        const errorMessage = errorData?.detail || `HTTP ${response.status}: ${response.statusText}`;
+        throw new Error(errorMessage);
+      }
     } catch (error: any) {
       console.error('Error updating email:', error);
       
       let errorMessage = 'Error updating email';
-      if (error.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
+      if (error instanceof Response) {
+        try {
+          const errorData = await error.json();
+          errorMessage = errorData.detail || `HTTP ${error.status}: ${error.statusText}`;
+        } catch {
+          errorMessage = `HTTP ${error.status}: ${error.statusText}`;
+        }
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -84,7 +91,7 @@ const EmailEditPage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate('/emails');
+    navigateWithConfirm('/emails');
   };
 
   if (dataLoading) {

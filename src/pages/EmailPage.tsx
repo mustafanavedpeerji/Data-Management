@@ -31,7 +31,9 @@ const EmailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedEmail, setSelectedEmail] = useState<EmailWithAssociations | null>(null);
-  const [showDetails, setShowDetails] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [companies, setCompanies] = useState<{[key: number]: string}>({});
+  const [persons, setPersons] = useState<{[key: number]: string}>({});
 
   // Load emails
   const loadEmails = async (search: string = '') => {
@@ -52,6 +54,35 @@ const EmailPage: React.FC = () => {
     }
   };
 
+  // Load companies and persons for name lookup
+  const loadNamesData = async () => {
+    try {
+      // Load companies
+      const companiesResponse = await apiClient.get('/companies/all');
+      if (companiesResponse.ok) {
+        const companiesData = await companiesResponse.json();
+        const companiesMap = companiesData.reduce((acc: {[key: number]: string}, company: any) => {
+          acc[company.record_id] = company.company_group_print_name;
+          return acc;
+        }, {});
+        setCompanies(companiesMap);
+      }
+
+      // Load persons
+      const personsResponse = await apiClient.get('/persons/all');
+      if (personsResponse.ok) {
+        const personsData = await personsResponse.json();
+        const personsMap = personsData.reduce((acc: {[key: number]: string}, person: any) => {
+          acc[person.record_id] = person.person_print_name;
+          return acc;
+        }, {});
+        setPersons(personsMap);
+      }
+    } catch (error) {
+      console.error('Error loading names data:', error);
+    }
+  };
+
   // Load email details
   const loadEmailDetails = async (emailId: number) => {
     try {
@@ -60,7 +91,7 @@ const EmailPage: React.FC = () => {
         const responseData = await response.json();
         setSelectedEmail(responseData);
       }
-      setShowDetails(true);
+      setShowDetailsModal(true);
     } catch (error) {
       console.error('Error loading email details:', error);
     }
@@ -73,7 +104,7 @@ const EmailPage: React.FC = () => {
         await apiClient.delete(`/emails/${emailId}`);
         loadEmails(searchTerm);
         if (selectedEmail?.email_id === emailId) {
-          setShowDetails(false);
+          setShowDetailsModal(false);
           setSelectedEmail(null);
         }
       } catch (error) {
@@ -92,7 +123,37 @@ const EmailPage: React.FC = () => {
   // Initial load
   useEffect(() => {
     loadEmails();
+    loadNamesData();
   }, []);
+
+  // Group associations by company for better display
+  const groupAssociations = (associations: any[]) => {
+    const companyGroups: { [key: string]: any[] } = {};
+    const personAssociations: any[] = [];
+    
+    associations.forEach((assoc) => {
+      if (assoc.person_id) {
+        // Person associations go separate
+        personAssociations.push(assoc);
+      } else if (assoc.company_id) {
+        // Group by company
+        const key = assoc.company_id.toString();
+        if (!companyGroups[key]) {
+          companyGroups[key] = [];
+        }
+        companyGroups[key].push(assoc);
+      } else if (assoc.department) {
+        // Department only (unknown company)
+        const key = 'unknown_company';
+        if (!companyGroups[key]) {
+          companyGroups[key] = [];
+        }
+        companyGroups[key].push(assoc);
+      }
+    });
+    
+    return { companyGroups, personAssociations };
+  };
 
   // Get email type badge color
   const getTypeColor = (type?: string) => {
@@ -120,9 +181,8 @@ const EmailPage: React.FC = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Email List */}
-          <div className={`lg:col-span-2 ${theme === 'dark' ? 'bg-boxdark-2' : 'bg-white'} rounded-lg shadow-sm p-6`}>
+        {/* Email List */}
+        <div className={`${theme === 'dark' ? 'bg-boxdark-2' : 'bg-white'} rounded-lg shadow-sm p-6`}>
             {/* Search */}
             <form onSubmit={handleSearch} className="mb-6">
               <div className="flex gap-2">
@@ -156,16 +216,10 @@ const EmailPage: React.FC = () => {
                 {emails.map((email) => (
                   <div
                     key={email.email_id}
-                    className={`p-4 border rounded-lg cursor-pointer hover:shadow-md transition-shadow ${
+                    className={`p-4 border rounded-lg cursor-pointer hover:shadow-md transition-all ${
                       theme === 'dark'
-                        ? 'border-strokedark hover:bg-boxdark'
-                        : 'border-gray-200 hover:bg-gray-50'
-                    } ${
-                      selectedEmail?.email_id === email.email_id
-                        ? theme === 'dark'
-                          ? 'bg-boxdark border-primary'
-                          : 'bg-blue-50 border-primary'
-                        : ''
+                        ? 'border-strokedark hover:bg-boxdark hover:border-primary'
+                        : 'border-gray-200 hover:bg-gray-50 hover:border-primary'
                     }`}
                     onClick={() => loadEmailDetails(email.email_id)}
                   >
@@ -219,110 +273,228 @@ const EmailPage: React.FC = () => {
               </div>
             )}
           </div>
+      </div>
 
-          {/* Email Details Sidebar */}
-          <div className={`${theme === 'dark' ? 'bg-boxdark-2' : 'bg-white'} rounded-lg shadow-sm p-6`}>
-            {showDetails && selectedEmail ? (
-              <div>
-                <h3 className="text-lg font-semibold mb-4">Email Details</h3>
-                
-                <div className="space-y-3">
+      {/* Email Details Modal */}
+      {showDetailsModal && selectedEmail && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className={`${theme === 'dark' ? 'bg-boxdark-2 border-strokedark' : 'bg-white border-gray-200'} border rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom-4 duration-300`}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <h3 className="text-xl font-semibold">Email Details</h3>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigateWithConfirm(`/emails/edit/${selectedEmail.email_id}`)}
+                  className="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className={`p-2 rounded-md transition-colors ${theme === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Basic Info */}
+                <div className="space-y-4">
+                  <h4 className="text-lg font-medium text-blue-600 dark:text-blue-400">Basic Information</h4>
+                  
                   <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">Email Address</label>
-                    <p className="font-medium">{selectedEmail.email_address}</p>
+                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Email Address</label>
+                    <p className="font-medium text-lg">{selectedEmail.email_address}</p>
                   </div>
                   
+                  <div>
+                    <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Status</label>
+                    <span className={`px-3 py-1 text-sm rounded-full ${
+                      selectedEmail.is_active === 'Active'
+                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
+                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                    }`}>
+                      {selectedEmail.is_active}
+                    </span>
+                  </div>
+
                   {selectedEmail.email_type && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Type</label>
-                      <span className={`px-2 py-1 text-xs rounded-full ${getTypeColor(selectedEmail.email_type)}`}>
+                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Type</label>
+                      <span className={`px-3 py-1 text-sm rounded-full ${getTypeColor(selectedEmail.email_type)}`}>
                         {selectedEmail.email_type}
                       </span>
                     </div>
                   )}
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">Status</label>
-                    <span className={`px-2 py-1 text-xs rounded-full ${
-                      selectedEmail.is_active === 'Active'
-                        ? 'bg-green-100 text-green-800'
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {selectedEmail.is_active}
-                    </span>
-                  </div>
-                  
                   {selectedEmail.description && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Description</label>
+                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Description</label>
                       <p className="text-sm">{selectedEmail.description}</p>
                     </div>
                   )}
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-600 mb-1">Created</label>
-                    <p className="text-sm">{new Date(selectedEmail.created_at).toLocaleString()}</p>
-                  </div>
-                  
-                  {selectedEmail.updated_at && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-600 mb-1">Updated</label>
-                      <p className="text-sm">{new Date(selectedEmail.updated_at).toLocaleString()}</p>
+                      <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Created</label>
+                      <p className="text-sm">{new Date(selectedEmail.created_at).toLocaleString()}</p>
                     </div>
-                  )}
+                    
+                    {selectedEmail.updated_at && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Updated</label>
+                        <p className="text-sm">{new Date(selectedEmail.updated_at).toLocaleString()}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Associations */}
-                {selectedEmail.associations && selectedEmail.associations.length > 0 && (
-                  <div className="mt-6">
-                    <h4 className="font-medium mb-3">Associations ({selectedEmail.associations.length})</h4>
-                    <div className="space-y-2">
-                      {selectedEmail.associations.map((assoc, index) => (
-                        <div
-                          key={assoc.association_id}
-                          className={`p-3 rounded-md border ${
-                            theme === 'dark' ? 'border-strokedark bg-boxdark' : 'border-gray-200 bg-gray-50'
-                          }`}
-                        >
-                          {assoc.company_id && (
-                            <div className="text-sm">
-                              <span className="font-medium">Company ID:</span> {assoc.company_id}
+                <div className="space-y-4">
+                  <h4 className="text-lg font-medium text-purple-600 dark:text-purple-400">
+                    Associations ({selectedEmail.associations?.length || 0})
+                  </h4>
+                  
+                  {selectedEmail.associations && selectedEmail.associations.length > 0 ? (
+                    (() => {
+                      const { companyGroups, personAssociations } = groupAssociations(selectedEmail.associations);
+                      const hasCompanyAssociations = Object.keys(companyGroups).length > 0;
+                      const hasPersonAssociations = personAssociations.length > 0;
+
+                      return (
+                        <div className="space-y-4">
+                          {/* Company & Departments */}
+                          {hasCompanyAssociations && (
+                            <div>
+                              <h5 className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2 border-b border-blue-200 dark:border-blue-700 pb-1">
+                                🏢 Companies & Departments
+                              </h5>
+                              <div className="space-y-2">
+                                {Object.entries(companyGroups).map(([companyKey, groupAssocs]) => {
+                                  const isUnknownCompany = companyKey === 'unknown_company';
+                                  const companyName = isUnknownCompany 
+                                    ? 'Unknown Company' 
+                                    : companies[parseInt(companyKey)] || `Company ${companyKey}`;
+                                  
+                                  // Separate company-only vs company+department associations
+                                  const companyOnlyAssocs = groupAssocs.filter(a => !a.department);
+                                  const deptAssocs = groupAssocs.filter(a => a.department);
+                                  
+                                  return (
+                                    <div
+                                      key={companyKey}
+                                      className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-gray-700/50 border-gray-600' : 'bg-blue-50 border-blue-200'}`}
+                                    >
+                                      <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                        <span className="font-medium text-blue-700 dark:text-blue-300">
+                                          {companyName}
+                                        </span>
+                                      </div>
+                                      
+                                      {/* Company-only associations */}
+                                      {companyOnlyAssocs.length > 0 && (
+                                        <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                                          📋 General company association (no specific department)
+                                        </div>
+                                      )}
+                                      
+                                      {/* Department associations */}
+                                      {deptAssocs.length > 0 && (
+                                        <div className="space-y-1">
+                                          <div className="text-xs text-gray-600 dark:text-gray-400">Departments:</div>
+                                          <div className="flex flex-wrap gap-1">
+                                            {deptAssocs.map((assoc, idx) => (
+                                              <span
+                                                key={idx}
+                                                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${theme === 'dark' ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'}`}
+                                              >
+                                                <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                                                {assoc.department}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
                           )}
-                          {assoc.person_id && (
-                            <div className="text-sm">
-                              <span className="font-medium">Person ID:</span> {assoc.person_id}
-                            </div>
-                          )}
-                          {assoc.department && (
-                            <div className="text-sm">
-                              <span className="font-medium">Department:</span> {assoc.department}
-                            </div>
-                          )}
-                          {assoc.association_type && (
-                            <div className="text-sm">
-                              <span className="font-medium">Type:</span> {assoc.association_type}
-                            </div>
-                          )}
-                          {assoc.notes && (
-                            <div className="text-sm">
-                              <span className="font-medium">Notes:</span> {assoc.notes}
+
+                          {/* Persons */}
+                          {hasPersonAssociations && (
+                            <div>
+                              <h5 className="text-sm font-semibold text-purple-600 dark:text-purple-400 mb-2 border-b border-purple-200 dark:border-purple-700 pb-1">
+                                👤 Persons
+                              </h5>
+                              <div className="space-y-2">
+                                {personAssociations.map((assoc, index) => (
+                                  <div
+                                    key={index}
+                                    className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-gray-700/50 border-gray-600' : 'bg-purple-50 border-purple-200'}`}
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                                      <span className="font-medium text-purple-700 dark:text-purple-300">
+                                        {persons[assoc.person_id] || `Person ${assoc.person_id}`}
+                                      </span>
+                                    </div>
+                                    {assoc.notes && (
+                                      <div className="mt-1 text-xs text-gray-600 dark:text-gray-400">
+                                        Note: {assoc.notes}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>
-                      ))}
+                      );
+                    })()
+                  ) : (
+                    <div className="text-center py-6 text-gray-500 dark:text-gray-400">
+                      <div className="text-sm">No associations found</div>
+                      <div className="text-xs mt-1">This email is not associated with any companies or persons</div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500">
-                Select an email to view details
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+              <div className="text-sm text-gray-500">
+                Email ID: {selectedEmail.email_id}
               </div>
-            )}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setShowDetailsModal(false);
+                    deleteEmail(selectedEmail.email_id);
+                  }}
+                  className="px-3 py-1 text-sm bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors"
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => setShowDetailsModal(false)}
+                  className={`px-4 py-1 text-sm rounded-md transition-colors ${theme === 'dark' ? 'bg-gray-700 hover:bg-gray-600 text-gray-200' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
