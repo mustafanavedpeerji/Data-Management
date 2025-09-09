@@ -19,7 +19,7 @@ interface EmailAssociation {
 }
 
 const EmailAddPage: React.FC = () => {
-  const { navigate } = useNavigation();
+  const { navigateWithConfirm } = useNavigation();
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (formData: EmailFormData, associations: EmailAssociation[]) => {
@@ -31,16 +31,32 @@ const EmailAddPage: React.FC = () => {
       };
 
       const response = await apiClient.post('/emails/', requestData);
-      console.log('Email created successfully:', response.data);
+      if (response.ok) {
+        const responseData = await response.json();
+        console.log('Email created successfully:', responseData);
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
       
       // Navigate to email list page
-      navigate('/emails');
+      navigateWithConfirm('/emails');
     } catch (error: any) {
       console.error('Error creating email:', error);
       
       let errorMessage = 'Error creating email';
-      if (error.response?.data?.detail) {
-        errorMessage = error.response.data.detail;
+      
+      // Handle fetch API errors
+      if (error instanceof Response) {
+        try {
+          const errorData = await error.json();
+          if (errorData.detail) {
+            errorMessage = Array.isArray(errorData.detail)
+              ? errorData.detail.map((err: any) => `${err.loc?.join('.') || 'Field'}: ${err.msg}`).join(', ')
+              : errorData.detail;
+          }
+        } catch {
+          errorMessage = `HTTP ${error.status}: ${error.statusText}`;
+        }
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -52,7 +68,7 @@ const EmailAddPage: React.FC = () => {
   };
 
   const handleCancel = () => {
-    navigate('/emails');
+    navigateWithConfirm('/emails');
   };
 
   return (

@@ -41,7 +41,10 @@ const EmailPage: React.FC = () => {
         ? `/emails/search?q=${encodeURIComponent(search)}`
         : '/emails/all';
       const response = await apiClient.get(endpoint);
-      setEmails(response.data);
+      if (response.ok) {
+        const responseData = await response.json();
+        setEmails(responseData);
+      }
     } catch (error) {
       console.error('Error loading emails:', error);
     } finally {
@@ -53,7 +56,10 @@ const EmailPage: React.FC = () => {
   const loadEmailDetails = async (emailId: number) => {
     try {
       const response = await apiClient.get(`/emails/${emailId}`);
-      setSelectedEmail(response.data);
+      if (response.ok) {
+        const responseData = await response.json();
+        setSelectedEmail(responseData);
+      }
       setShowDetails(true);
     } catch (error) {
       console.error('Error loading email details:', error);

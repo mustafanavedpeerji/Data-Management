@@ -513,7 +513,7 @@ const PersonAddForm: React.FC<PersonAddFormProps> = ({
         {/* Location & Professional Information */}
         <div className={`p-2 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <h3 className="text-sm font-medium mb-1">Location & Professional Information</h3>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <div>
               <label className="block text-xs mb-1">Base City</label>
               <select
@@ -545,33 +545,6 @@ const PersonAddForm: React.FC<PersonAddFormProps> = ({
               </select>
             </div>
             <div>
-              <label className="block text-xs mb-1">Attached Companies</label>
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={openCompanyModal}
-                  className={`w-full px-2 py-1 text-xs rounded border-2 border-dashed ${
-                    theme === 'dark' 
-                      ? 'border-gray-600 text-gray-300 hover:border-gray-500 hover:bg-gray-700' 
-                      : 'border-gray-300 text-gray-600 hover:border-gray-400 hover:bg-gray-50'
-                  } transition-colors`}
-                >
-                  + Select Companies
-                </button>
-                {getSelectedCompanyNames().length > 0 && (
-                  <div className="text-xs space-y-1 max-h-20 overflow-y-auto">
-                    {getSelectedCompanyNames().map((name, index) => (
-                      <div key={index} className={`px-2 py-1 rounded text-xs ${
-                        theme === 'dark' ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {name}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-            <div>
               <label className="block text-xs mb-1">Designation</label>
               <input
                 type="text"
@@ -582,6 +555,35 @@ const PersonAddForm: React.FC<PersonAddFormProps> = ({
                   theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
                 }`}
               />
+            </div>
+          </div>
+          
+          {/* Attached Companies - Full Width Below */}
+          <div className="mt-3">
+            <label className="block text-xs mb-1">Attached Companies</label>
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={openCompanyModal}
+                className={`w-full px-2 py-1 text-xs rounded border-2 border-dashed ${
+                  theme === 'dark' 
+                    ? 'border-gray-600 text-gray-300 hover:border-gray-500 hover:bg-gray-700' 
+                    : 'border-gray-300 text-gray-600 hover:border-gray-400 hover:bg-gray-50'
+                } transition-colors`}
+              >
+                + Select Companies
+              </button>
+              {getSelectedCompanyNames().length > 0 && (
+                <div className="text-xs space-y-1 max-h-20 overflow-y-auto">
+                  {getSelectedCompanyNames().map((name, index) => (
+                    <div key={index} className={`px-2 py-1 rounded text-xs ${
+                      theme === 'dark' ? 'bg-gray-700 text-gray-200' : 'bg-gray-100 text-gray-700'
+                    }`}>
+                      {name}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
