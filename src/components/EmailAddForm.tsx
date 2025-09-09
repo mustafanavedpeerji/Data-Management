@@ -97,6 +97,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [showDepartmentModal, setShowDepartmentModal] = useState(false);
   const [currentAssociationIndex, setCurrentAssociationIndex] = useState(-1);
+  const [modalStep, setModalStep] = useState<'company' | 'department'>('company');
 
   // Loading states
   const [companiesLoading, setCompaniesLoading] = useState(false);
@@ -236,6 +237,35 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
     return person ? person.person_print_name : `Person ${personId}`;
   };
 
+  // Group associations by company for better display
+  const groupedAssociations = () => {
+    const companyGroups: { [key: string]: EmailAssociation[] } = {};
+    const personAssociations: EmailAssociation[] = [];
+    
+    associations.forEach((assoc) => {
+      if (assoc.person_id) {
+        // Person associations go separate
+        personAssociations.push(assoc);
+      } else if (assoc.company_id) {
+        // Group by company
+        const key = assoc.company_id.toString();
+        if (!companyGroups[key]) {
+          companyGroups[key] = [];
+        }
+        companyGroups[key].push(assoc);
+      } else if (assoc.department) {
+        // Department only (unknown company)
+        const key = 'unknown_company';
+        if (!companyGroups[key]) {
+          companyGroups[key] = [];
+        }
+        companyGroups[key].push(assoc);
+      }
+    });
+    
+    return { companyGroups, personAssociations };
+  };
+
   return (
     <div className={`w-full max-w-none mx-auto p-3 text-sm ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
       <form onSubmit={handleSubmit} className="space-y-3">
@@ -302,6 +332,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                   loadCompanies();
                   setSelectedDepartments([]);
                   setSelectedCompanyForDept(null);
+                  setModalStep('company');
                   setShowCompanyModal(true);
                 }}
                 className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-md min-h-[44px]"
@@ -329,75 +360,155 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
             </div>
           </div>
 
-          {/* Display current associations */}
-          {associations.length > 0 ? (
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Current Associations ({associations.length})</h4>
-              {associations.map((assoc, index) => (
-                <div
-                  key={index}
-                  className={`p-4 rounded-lg border ${theme === 'dark' ? 'bg-gray-700/50 border-gray-600' : 'bg-blue-50 border-blue-200'} transition-all duration-200 hover:shadow-md`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
-                        {/* Company */}
-                        <div>
-                          <span className="block font-semibold text-gray-600 dark:text-gray-400 mb-1">Company</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <span className="font-medium text-blue-700 dark:text-blue-300">
-                              {assoc.company_id ? getCompanyName(assoc.company_id) : 'Not specified'}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        {/* Department */}
-                        <div>
-                          <span className="block font-semibold text-gray-600 dark:text-gray-400 mb-1">Department</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <span className="font-medium text-green-700 dark:text-green-300">
-                              {assoc.department || 'Not specified'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Person Info (if person association) */}
-                      {assoc.person_id && (
-                        <div className="mt-3 pt-3 border-t border-gray-300 dark:border-gray-600">
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                            <span className="font-semibold text-gray-600 dark:text-gray-400">Person:</span>
-                            <span className="font-medium text-purple-700 dark:text-purple-300">{getPersonName(assoc.person_id)}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <button
-                      type="button"
-                      onClick={() => removeAssociation(index)}
-                      className="ml-3 text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg p-2 transition-all duration-200 transform hover:scale-105"
-                      title="Remove association"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </div>
+          {/* Display current associations - Two Column Layout */}
+          {(() => {
+            const { companyGroups, personAssociations } = groupedAssociations();
+            const hasCompanyAssociations = Object.keys(companyGroups).length > 0;
+            const hasPersonAssociations = personAssociations.length > 0;
+
+            if (!hasCompanyAssociations && !hasPersonAssociations) {
+              return (
+                <div className={`p-6 text-center rounded-lg border-2 border-dashed ${theme === 'dark' ? 'border-gray-600 text-gray-400' : 'border-gray-300 text-gray-500'}`}>
+                  <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <p className="text-sm">No associations added yet. Click the buttons above to add companies or people.</p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className={`p-6 text-center rounded-lg border-2 border-dashed ${theme === 'dark' ? 'border-gray-600 text-gray-400' : 'border-gray-300 text-gray-500'}`}>
-              <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              <p className="text-sm">No associations added yet. Click the buttons above to add companies or people.</p>
-            </div>
-          )}
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Company & Departments Column */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-blue-600 dark:text-blue-400 border-b border-blue-200 dark:border-blue-700 pb-2">
+                    🏢 Companies & Departments ({Object.keys(companyGroups).length})
+                  </h4>
+                  {hasCompanyAssociations ? (
+                    Object.entries(companyGroups).map(([companyKey, groupAssocs]) => {
+                      const isUnknownCompany = companyKey === 'unknown_company';
+                      const companyName = isUnknownCompany 
+                        ? 'Unknown Company' 
+                        : getCompanyName(parseInt(companyKey));
+                      
+                      // Separate company-only vs company+department associations
+                      const companyOnlyAssocs = groupAssocs.filter(a => !a.department);
+                      const deptAssocs = groupAssocs.filter(a => a.department);
+                      
+                      return (
+                        <div
+                          key={companyKey}
+                          className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-gray-700/50 border-gray-600' : 'bg-blue-50 border-blue-200'} transition-all duration-200`}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                              <span className="font-medium text-blue-700 dark:text-blue-300 text-sm">
+                                {companyName}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                // Remove all associations for this company
+                                const indicesToRemove: number[] = [];
+                                associations.forEach((assoc, index) => {
+                                  if (
+                                    (assoc.company_id?.toString() === companyKey) ||
+                                    (companyKey === 'unknown_company' && !assoc.company_id && assoc.department)
+                                  ) {
+                                    indicesToRemove.push(index);
+                                  }
+                                });
+                                // Remove in reverse order to maintain indices
+                                indicesToRemove.reverse().forEach(index => removeAssociation(index));
+                              }}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/20 rounded p-1 transition-colors"
+                              title="Remove all associations for this company"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                          
+                          {/* Company-only associations */}
+                          {companyOnlyAssocs.length > 0 && (
+                            <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                              📋 General company association (no specific department)
+                            </div>
+                          )}
+                          
+                          {/* Department associations */}
+                          {deptAssocs.length > 0 && (
+                            <div className="space-y-1">
+                              <div className="text-xs text-gray-600 dark:text-gray-400">Departments:</div>
+                              <div className="flex flex-wrap gap-1">
+                                {deptAssocs.map((assoc, idx) => (
+                                  <span
+                                    key={idx}
+                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${theme === 'dark' ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'}`}
+                                  >
+                                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                                    {assoc.department}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-xs">
+                      No company associations yet
+                    </div>
+                  )}
+                </div>
+
+                {/* Persons Column */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-purple-600 dark:text-purple-400 border-b border-purple-200 dark:border-purple-700 pb-2">
+                    👤 Persons ({personAssociations.length})
+                  </h4>
+                  {hasPersonAssociations ? (
+                    personAssociations.map((assoc, index) => {
+                      const originalIndex = associations.findIndex(a => a === assoc);
+                      return (
+                        <div
+                          key={originalIndex}
+                          className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-gray-700/50 border-gray-600' : 'bg-purple-50 border-purple-200'} transition-all duration-200`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                              <span className="font-medium text-purple-700 dark:text-purple-300 text-sm">
+                                {assoc.person_id ? getPersonName(assoc.person_id) : 'Unknown Person'}
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeAssociation(originalIndex)}
+                              className="text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/20 rounded p-1 transition-colors"
+                              title="Remove person association"
+                            >
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-xs">
+                      No person associations yet
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Form Actions */}
@@ -447,11 +558,25 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
-                <span className="hidden sm:inline">🏢 Select Company & Department</span>
-                <span className="sm:hidden">Company & Dept</span>
+                {modalStep === 'company' ? (
+                  <>
+                    <span className="hidden sm:inline">🏢 Step 1: Select Company</span>
+                    <span className="sm:hidden">Step 1</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="hidden sm:inline">🏷️ Step 2: Select Departments</span>
+                    <span className="sm:hidden">Step 2</span>
+                  </>
+                )}
               </h3>
               <button
-                onClick={() => setShowCompanyModal(false)}
+                onClick={() => {
+                  setSelectedDepartments([]);
+                  setSelectedCompanyForDept(null);
+                  setModalStep('company');
+                  setShowCompanyModal(false);
+                }}
                 className="text-white/80 hover:text-white hover:bg-white/10 rounded-full p-2 transition-colors min-w-[40px] min-h-[40px] flex items-center justify-center"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -461,232 +586,266 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
             </div>
             
             <div className="flex-1 overflow-y-auto p-3 sm:p-4">
-              <div className="space-y-4">
-                {/* Company Search */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">Search & Select Company</label>
-                  <input
-                    type="text"
-                    placeholder="Search companies..."
-                    value={companySearch}
-                    onChange={(e) => {
-                      setCompanySearch(e.target.value);
-                      loadCompanies(e.target.value);
-                    }}
-                    className={`w-full px-3 py-2 border rounded-lg text-sm mb-3 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      theme === 'dark'
-                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                    }`}
-                  />
-                  
-                  <div className="h-32 sm:h-48 overflow-y-auto border rounded">
-                    {companiesLoading ? (
-                      <div className="text-center py-6 sm:py-8 text-gray-500">
-                        <div className="flex items-center justify-center gap-2">
-                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0 1 4 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          <span className="text-xs sm:text-sm">Loading companies...</span>
-                        </div>
-                      </div>
-                    ) : companiesError ? (
-                      <div className="text-center py-6 sm:py-8">
-                        <div className="text-red-500 text-xs sm:text-sm mb-2">{companiesError}</div>
-                        <button
-                          onClick={() => loadCompanies(companySearch)}
-                          className="text-xs text-blue-600 hover:text-blue-800 underline"
-                        >
-                          Try again
-                        </button>
-                      </div>
-                    ) : companies.length === 0 ? (
-                      <div className="text-center py-6 sm:py-8 text-gray-500">
-                        <div className="text-xs sm:text-sm">No companies found</div>
-                        {companySearch && (
-                          <div className="text-xs text-gray-400 mt-1">Try a different search term</div>
-                        )}
-                      </div>
-                    ) : (
-                      companies.map((company) => (
-                        <div
-                          key={company.record_id}
-                          className={`p-2 sm:p-3 border-b cursor-pointer transition-colors ${
-                            selectedCompanyForDept?.record_id === company.record_id
-                              ? theme === 'dark' 
-                                ? 'bg-blue-900/30 border-blue-600'
-                                : 'bg-blue-50 border-blue-300'
-                              : theme === 'dark' 
-                                ? 'hover:bg-gray-700 border-gray-700'
-                                : 'hover:bg-gray-50 border-gray-200'
-                          } min-h-[44px] flex items-center`}
-                          onClick={() => setSelectedCompanyForDept(company)}
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="font-medium text-sm sm:text-base truncate">{company.company_group_print_name}</div>
-                            {company.uid && (
-                              <div className="text-xs sm:text-sm text-gray-500 truncate">UID: {company.uid}</div>
-                            )}
-                          </div>
-                          {selectedCompanyForDept?.record_id === company.record_id && (
-                            <svg className="w-5 h-5 text-blue-600 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              {modalStep === 'company' ? (
+                /* STEP 1: Company Selection */
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Search & Select Company</label>
+                    <input
+                      type="text"
+                      placeholder="Search companies..."
+                      value={companySearch}
+                      onChange={(e) => {
+                        setCompanySearch(e.target.value);
+                        loadCompanies(e.target.value);
+                      }}
+                      className={`w-full px-3 py-2 border rounded-lg text-sm mb-3 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        theme === 'dark'
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                      }`}
+                    />
+                    
+                    <div className="h-64 sm:h-80 overflow-y-auto border rounded">
+                      {companiesLoading ? (
+                        <div className="text-center py-6 sm:py-8 text-gray-500">
+                          <div className="flex items-center justify-center gap-2">
+                            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0 1 4 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
+                            <span className="text-xs sm:text-sm">Loading companies...</span>
+                          </div>
+                        </div>
+                      ) : companiesError ? (
+                        <div className="text-center py-6 sm:py-8">
+                          <div className="text-red-500 text-xs sm:text-sm mb-2">{companiesError}</div>
+                          <button
+                            onClick={() => loadCompanies(companySearch)}
+                            className="text-xs text-blue-600 hover:text-blue-800 underline"
+                          >
+                            Try again
+                          </button>
+                        </div>
+                      ) : companies.length === 0 ? (
+                        <div className="text-center py-6 sm:py-8 text-gray-500">
+                          <div className="text-xs sm:text-sm">No companies found</div>
+                          {companySearch && (
+                            <div className="text-xs text-gray-400 mt-1">Try a different search term</div>
                           )}
                         </div>
-                      ))
-                    )}
+                      ) : (
+                        companies.map((company) => (
+                          <div
+                            key={company.record_id}
+                            className={`p-3 border-b cursor-pointer transition-colors ${
+                              selectedCompanyForDept?.record_id === company.record_id
+                                ? theme === 'dark' 
+                                  ? 'bg-blue-900/30 border-blue-600'
+                                  : 'bg-blue-50 border-blue-300'
+                                : theme === 'dark' 
+                                  ? 'hover:bg-gray-700 border-gray-700'
+                                  : 'hover:bg-gray-50 border-gray-200'
+                            } min-h-[44px] flex items-center`}
+                            onClick={() => setSelectedCompanyForDept(company)}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm sm:text-base truncate">{company.company_group_print_name}</div>
+                              {company.uid && (
+                                <div className="text-xs sm:text-sm text-gray-500 truncate">UID: {company.uid}</div>
+                              )}
+                            </div>
+                            {selectedCompanyForDept?.record_id === company.record_id && (
+                              <svg className="w-5 h-5 text-blue-600 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons for Step 1 */}
+                  <div className="flex flex-col gap-2 pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <button
+                      type="button"
+                      onClick={() => setModalStep('department')}
+                      className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors min-h-[44px] flex items-center justify-center"
+                      disabled={!selectedCompanyForDept}
+                    >
+                      <span className="hidden sm:inline">➡️ Next: Select Departments</span>
+                      <span className="sm:hidden">➡️ Next</span>
+                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Skip to department only (unknown company)
+                          setSelectedCompanyForDept(null);
+                          setModalStep('department');
+                        }}
+                        className="flex-1 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs transition-colors min-h-[40px] flex items-center justify-center"
+                      >
+                        <span className="hidden sm:inline">🏢 Skip to Departments Only</span>
+                        <span className="sm:hidden">🏢 Skip</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedDepartments([]);
+                          setSelectedCompanyForDept(null);
+                          setModalStep('company');
+                          setShowCompanyModal(false);
+                        }}
+                        className="flex-1 px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-xs transition-colors min-h-[40px] flex items-center justify-center"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 </div>
+              ) : (
+                /* STEP 2: Department Selection */
+                <div className="space-y-4">
+                  {/* Selected Company Display */}
+                  {selectedCompanyForDept && (
+                    <div className={`p-3 rounded border ${
+                      theme === 'dark' ? 'bg-blue-900/20 border-blue-600' : 'bg-blue-50 border-blue-300'
+                    }`}>
+                      <div className="text-xs sm:text-sm font-medium text-blue-600 mb-1">Selected Company:</div>
+                      <div className="font-medium text-sm sm:text-base truncate">{selectedCompanyForDept.company_group_print_name}</div>
+                    </div>
+                  )}
 
-                {/* Selected Company Display */}
-                {selectedCompanyForDept && (
-                  <div className={`p-2 sm:p-3 rounded border ${
-                    theme === 'dark' ? 'bg-blue-900/20 border-blue-600' : 'bg-blue-50 border-blue-300'
-                  }`}>
-                    <div className="text-xs sm:text-sm font-medium text-blue-600 mb-1">Selected Company:</div>
-                    <div className="font-medium text-sm sm:text-base truncate">{selectedCompanyForDept.company_group_print_name}</div>
-                  </div>
-                )}
-
-                {/* Department Selection */}
-                <div>
-                  <label className="block text-sm font-medium mb-2">Select Department (Optional)</label>
-                  <input
-                    type="text"
-                    placeholder="Search departments..."
-                    value={departmentSearch}
-                    onChange={(e) => setDepartmentSearch(e.target.value)}
-                    className={`w-full px-3 py-2 border rounded-lg text-sm mb-3 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                      theme === 'dark'
-                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                    }`}
-                  />
-                  
-                  <div className="h-24 sm:h-32 overflow-y-auto border rounded">
-                    <div
-                      className={`p-2 sm:p-3 border-b cursor-pointer transition-colors min-h-[44px] flex items-center ${
-                        theme === 'dark' ? 'hover:bg-gray-700 border-gray-700' : 'hover:bg-gray-50 border-gray-200'
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Select Departments (Optional - Select multiple)</label>
+                    <input
+                      type="text"
+                      placeholder="Search departments..."
+                      value={departmentSearch}
+                      onChange={(e) => setDepartmentSearch(e.target.value)}
+                      className={`w-full px-3 py-2 border rounded-lg text-sm mb-3 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                        theme === 'dark'
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                       }`}
+                    />
+                    
+                    <div className="h-64 sm:h-80 overflow-y-auto border rounded">
+                      {DEPARTMENTS
+                        .filter(dept => 
+                          dept.toLowerCase().includes(departmentSearch.toLowerCase())
+                        )
+                        .map((department) => {
+                          const isSelected = selectedDepartments.includes(department);
+                          return (
+                          <div
+                            key={department}
+                            className={`p-3 border-b cursor-pointer transition-colors min-h-[44px] flex items-center justify-between ${
+                              isSelected 
+                                ? theme === 'dark' ? 'bg-green-900/30 border-green-700' : 'bg-green-100 border-green-300'
+                                : theme === 'dark' ? 'hover:bg-green-900/20 border-gray-700' : 'hover:bg-green-50 border-gray-200'
+                            }`}
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedDepartments(prev => prev.filter(d => d !== department));
+                              } else {
+                                setSelectedDepartments(prev => [...prev, department]);
+                              }
+                            }}
+                          >
+                            <div className="text-sm truncate">{department}</div>
+                            {isSelected && (
+                              <svg className="w-5 h-5 text-green-600 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons for Step 2 */}
+                  <div className="flex flex-col gap-2 pt-3 border-t border-gray-200 dark:border-gray-600">
+                    <button
+                      type="button"
                       onClick={() => {
-                        // Add company-only association (no department)
-                        if (selectedCompanyForDept) {
+                        // Add selected departments with company
+                        if (selectedDepartments.length > 0 && selectedCompanyForDept) {
+                          selectedDepartments.forEach(department => {
+                            const newAssociation: EmailAssociation = {
+                              company_id: selectedCompanyForDept.record_id,
+                              department
+                            };
+                            setAssociations(prev => [...prev, newAssociation]);
+                          });
+                        } else if (selectedDepartments.length > 0) {
+                          // Department only (unknown company)
+                          selectedDepartments.forEach(department => {
+                            const newAssociation: EmailAssociation = {
+                              department
+                            };
+                            setAssociations(prev => [...prev, newAssociation]);
+                          });
+                        }
+                        setSelectedDepartments([]);
+                        setSelectedCompanyForDept(null);
+                        setModalStep('company');
+                        setShowCompanyModal(false);
+                      }}
+                      className="w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors min-h-[44px] flex items-center justify-center"
+                      disabled={selectedDepartments.length === 0}
+                    >
+                      <span className="hidden sm:inline">✅ Add Selected Departments ({selectedDepartments.length})</span>
+                      <span className="sm:hidden">✅ Add ({selectedDepartments.length})</span>
+                    </button>
+                    {selectedCompanyForDept && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Add company only (no departments)
                           const newAssociation: EmailAssociation = {
                             company_id: selectedCompanyForDept.record_id
                           };
                           setAssociations(prev => [...prev, newAssociation]);
-                        }
-                        setSelectedCompanyForDept(null);
-                        setShowCompanyModal(false);
-                      }}
-                    >
-                      <div className="text-xs sm:text-sm font-medium text-gray-600 dark:text-gray-300">
-                        <span className="hidden sm:inline">📋 Company Only (No Specific Department)</span>
-                        <span className="sm:hidden">📋 Company Only</span>
-                      </div>
-                    </div>
-                    {DEPARTMENTS
-                      .filter(dept => 
-                        dept.toLowerCase().includes(departmentSearch.toLowerCase())
-                      )
-                      .map((department) => {
-                        const isSelected = selectedDepartments.includes(department);
-                        return (
-                        <div
-                          key={department}
-                          className={`p-2 sm:p-3 border-b cursor-pointer transition-colors min-h-[44px] flex items-center justify-between ${
-                            isSelected 
-                              ? theme === 'dark' ? 'bg-green-900/30 border-green-700' : 'bg-green-100 border-green-300'
-                              : theme === 'dark' ? 'hover:bg-green-900/20 border-gray-700' : 'hover:bg-green-50 border-gray-200'
-                          }`}
-                          onClick={() => {
-                            if (isSelected) {
-                              // Remove from selection
-                              setSelectedDepartments(prev => prev.filter(d => d !== department));
-                            } else {
-                              // Add to selection
-                              setSelectedDepartments(prev => [...prev, department]);
-                            }
-                          }}
-                        >
-                          <div className="text-xs sm:text-sm truncate">{department}</div>
-                          {isSelected && (
-                            <svg className="w-4 h-4 text-green-600 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </div>
-                        );
-                      })}
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row justify-between gap-2 pt-3 border-t border-gray-200 dark:border-gray-600">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // Add selected departments with company
-                      if (selectedDepartments.length > 0 && selectedCompanyForDept) {
-                        selectedDepartments.forEach(department => {
-                          const newAssociation: EmailAssociation = {
-                            company_id: selectedCompanyForDept.record_id,
-                            department
-                          };
-                          setAssociations(prev => [...prev, newAssociation]);
-                        });
-                      }
-                      setSelectedDepartments([]);
-                      setSelectedCompanyForDept(null);
-                      setShowCompanyModal(false);
-                    }}
-                    className="px-3 sm:px-4 py-2 sm:py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs sm:text-sm transition-colors min-h-[44px] flex items-center justify-center"
-                    disabled={selectedDepartments.length === 0}
-                  >
-                    <span className="hidden sm:inline">✅ Add Selected Departments ({selectedDepartments.length})</span>
-                    <span className="sm:hidden">✅ Add ({selectedDepartments.length})</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // Add Unknown Company + Department
-                      if (departmentSearch.trim()) {
-                        const matchedDept = DEPARTMENTS.find(dept => 
-                          dept.toLowerCase().includes(departmentSearch.toLowerCase())
-                        );
-                        if (matchedDept) {
-                          const newAssociation: EmailAssociation = {
-                            department: matchedDept
-                          };
-                          setAssociations(prev => [...prev, newAssociation]);
-                          setDepartmentSearch('');
                           setSelectedDepartments([]);
                           setSelectedCompanyForDept(null);
+                          setModalStep('company');
                           setShowCompanyModal(false);
-                        }
-                      }
-                    }}
-                    className="px-3 sm:px-4 py-2 sm:py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs sm:text-sm transition-colors min-h-[44px] flex items-center justify-center"
-                    disabled={!departmentSearch.trim()}
-                  >
-                    <span className="hidden sm:inline">🏢 Add Department Only (Unknown Company)</span>
-                    <span className="sm:hidden">🏢 Dept Only</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedDepartments([]);
-                      setSelectedCompanyForDept(null);
-                      setShowCompanyModal(false);
-                    }}
-                    className="px-3 sm:px-4 py-2 sm:py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-xs sm:text-sm transition-colors min-h-[44px] flex items-center justify-center"
-                  >
-                    Cancel
-                  </button>
+                        }}
+                        className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors min-h-[44px] flex items-center justify-center"
+                      >
+                        <span className="hidden sm:inline">📋 Add Company Only (No Departments)</span>
+                        <span className="sm:hidden">📋 Company Only</span>
+                      </button>
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setModalStep('company')}
+                        className="flex-1 px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-xs transition-colors min-h-[40px] flex items-center justify-center"
+                      >
+                        <span className="hidden sm:inline">⬅️ Back</span>
+                        <span className="sm:hidden">⬅️</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedDepartments([]);
+                          setSelectedCompanyForDept(null);
+                          setModalStep('company');
+                          setShowCompanyModal(false);
+                        }}
+                        className="flex-1 px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-xs transition-colors min-h-[40px] flex items-center justify-center"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
         </div>
