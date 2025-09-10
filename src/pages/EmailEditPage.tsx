@@ -191,6 +191,13 @@ const EmailEditPage: React.FC = () => {
       toCreate: toCreate.length,
       toUpdate: toUpdate.length
     });
+    console.log('EmailEditPage: Initial associations:', initialAssociations);
+    console.log('EmailEditPage: Current associations:', currentAssociations);
+    console.log('EmailEditPage: Detailed changes:', {
+      toDelete: toDelete,
+      toCreate: toCreate,
+      toUpdate: toUpdate
+    });
 
     // Delete removed associations
     for (const assoc of toDelete) {
@@ -212,9 +219,13 @@ const EmailEditPage: React.FC = () => {
           person_id: assoc.person_id,
           departments: assoc.departments
         };
+        console.log('EmailEditPage: Update data being sent:', updateData);
         const updateResponse = await apiClient.put(`/emails/associations/${assoc.association_id}`, updateData);
         if (!updateResponse.ok) {
-          console.warn('Failed to update association:', assoc.association_id);
+          const errorText = await updateResponse.text();
+          console.error('Failed to update association:', assoc.association_id, 'Error:', errorText);
+        } else {
+          console.log('EmailEditPage: Successfully updated association:', assoc.association_id);
         }
       }
     }
@@ -227,9 +238,13 @@ const EmailEditPage: React.FC = () => {
         person_id: assoc.person_id,
         departments: assoc.departments
       };
+      console.log('EmailEditPage: Create data being sent:', createData);
       const createResponse = await apiClient.post(`/emails/${id}/associations`, createData);
       if (!createResponse.ok) {
-        console.warn('Failed to create association:', createData);
+        const errorText = await createResponse.text();
+        console.error('Failed to create association:', createData, 'Error:', errorText);
+      } else {
+        console.log('EmailEditPage: Successfully created new association');
       }
     }
   };

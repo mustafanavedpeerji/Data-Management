@@ -17,10 +17,8 @@ interface EmailWithAssociations extends Email {
   associations: Array<{
     association_id: number;
     company_id?: number;
-    department?: string;
+    departments?: string[];
     person_id?: number;
-    association_type?: string;
-    notes?: string;
   }>;
 }
 
@@ -142,7 +140,7 @@ const EmailPage: React.FC = () => {
           companyGroups[key] = [];
         }
         companyGroups[key].push(assoc);
-      } else if (assoc.department) {
+      } else if (assoc.departments && assoc.departments.length > 0) {
         // Department only (unknown company)
         const key = 'unknown_company';
         if (!companyGroups[key]) {
@@ -381,9 +379,9 @@ const EmailPage: React.FC = () => {
                                     ? 'Unknown Company' 
                                     : companies[parseInt(companyKey)] || `Company ${companyKey}`;
                                   
-                                  // Separate company-only vs company+department associations
-                                  const companyOnlyAssocs = groupAssocs.filter(a => !a.department);
-                                  const deptAssocs = groupAssocs.filter(a => a.department);
+                                  // Separate company-only vs company+departments associations
+                                  const companyOnlyAssocs = groupAssocs.filter(a => !a.departments || a.departments.length === 0);
+                                  const deptAssocs = groupAssocs.filter(a => a.departments && a.departments.length > 0);
                                   
                                   return (
                                     <div
@@ -409,15 +407,17 @@ const EmailPage: React.FC = () => {
                                         <div className="space-y-1">
                                           <div className="text-xs text-gray-600 dark:text-gray-400">Departments:</div>
                                           <div className="flex flex-wrap gap-1">
-                                            {deptAssocs.map((assoc, idx) => (
-                                              <span
-                                                key={idx}
-                                                className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${theme === 'dark' ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'}`}
-                                              >
-                                                <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                                                {assoc.department}
-                                              </span>
-                                            ))}
+                                            {deptAssocs.flatMap(assoc => 
+                                              (assoc.departments || []).map((dept, idx) => (
+                                                <span
+                                                  key={`${assoc.association_id}-${idx}`}
+                                                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${theme === 'dark' ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'}`}
+                                                >
+                                                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                                                  {dept}
+                                                </span>
+                                              ))
+                                            )}
                                           </div>
                                         </div>
                                       )}

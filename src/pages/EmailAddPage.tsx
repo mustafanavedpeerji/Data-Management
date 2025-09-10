@@ -34,11 +34,16 @@ const EmailAddPage: React.FC = () => {
         associations: associations
       };
 
+      console.log('EmailAddPage: Sending request data:', JSON.stringify(requestData, null, 2));
+      
       const response = await apiClient.post('/emails/', requestData);
       if (response.ok) {
         const responseData = await response.json();
         console.log('Email created successfully:', responseData);
       } else {
+        // Log the error response for debugging
+        const errorText = await response.text();
+        console.error('Backend error response:', errorText);
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       

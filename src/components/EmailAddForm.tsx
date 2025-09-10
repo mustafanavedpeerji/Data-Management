@@ -414,29 +414,77 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                                 {companyName}
                               </span>
                             </div>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                // Remove all associations for this company
-                                const indicesToRemove: number[] = [];
-                                associations.forEach((assoc, index) => {
-                                  if (
-                                    (assoc.company_id?.toString() === companyKey) ||
-                                    (companyKey === 'unknown_company' && !assoc.company_id && assoc.departments && assoc.departments.length > 0)
-                                  ) {
-                                    indicesToRemove.push(index);
-                                  }
-                                });
-                                // Remove in reverse order to maintain indices
-                                indicesToRemove.reverse().forEach(index => removeAssociation(index));
-                              }}
-                              className="text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/20 rounded p-1 transition-colors"
-                              title="Remove all associations for this company"
-                            >
-                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
-                            </button>
+                            <div className="flex items-center gap-1">
+                              {/* Edit Button - Only show for associations with departments */}
+                              {deptAssocs.length > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    // Find the association with departments for this company
+                                    const assocWithDepts = deptAssocs[0];
+                                    if (assocWithDepts && assocWithDepts.company_id) {
+                                      // Pre-populate the modal with existing data
+                                      const company = companies.find(c => c.record_id === assocWithDepts.company_id);
+                                      if (company) {
+                                        setSelectedCompanyForDept(company);
+                                        setSelectedDepartments(assocWithDepts.departments || []);
+                                        setModalStep('department');
+                                        setShowCompanyModal(true);
+                                        // Remove the existing association so it can be updated
+                                        const indexToRemove = associations.findIndex(a => a === assocWithDepts);
+                                        if (indexToRemove !== -1) {
+                                          removeAssociation(indexToRemove);
+                                        }
+                                      }
+                                    } else if (companyKey === 'unknown_company') {
+                                      // Handle department-only associations
+                                      const deptOnlyAssoc = deptAssocs[0];
+                                      if (deptOnlyAssoc) {
+                                        setSelectedCompanyForDept(null);
+                                        setSelectedDepartments(deptOnlyAssoc.departments || []);
+                                        setModalStep('department');
+                                        setShowCompanyModal(true);
+                                        // Remove the existing association so it can be updated
+                                        const indexToRemove = associations.findIndex(a => a === deptOnlyAssoc);
+                                        if (indexToRemove !== -1) {
+                                          removeAssociation(indexToRemove);
+                                        }
+                                      }
+                                    }
+                                  }}
+                                  className="text-blue-500 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded p-1 transition-colors"
+                                  title="Edit departments for this company"
+                                >
+                                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                  </svg>
+                                </button>
+                              )}
+                              {/* Delete Button */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  // Remove all associations for this company
+                                  const indicesToRemove: number[] = [];
+                                  associations.forEach((assoc, index) => {
+                                    if (
+                                      (assoc.company_id?.toString() === companyKey) ||
+                                      (companyKey === 'unknown_company' && !assoc.company_id && assoc.departments && assoc.departments.length > 0)
+                                    ) {
+                                      indicesToRemove.push(index);
+                                    }
+                                  });
+                                  // Remove in reverse order to maintain indices
+                                  indicesToRemove.reverse().forEach(index => removeAssociation(index));
+                                }}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-100 dark:hover:bg-red-900/20 rounded p-1 transition-colors"
+                                title="Remove all associations for this company"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
                           
                           {/* Company-only associations */}
@@ -462,7 +510,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                                     </span>
                                   ))
                                 ))
-                              </div>
+                    }</div>
                             </div>
                           )}
                         </div>
@@ -544,7 +592,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
       {/* Company Selection Modal */}
       {showCompanyModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-in fade-in duration-200">
-          <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg w-full max-w-[95vw] sm:max-w-2xl h-full max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 duration-300`}>
+          <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg w-full max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 duration-300`}>
             <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white flex-shrink-0">
               <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -598,7 +646,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                       }`}
                     />
                     
-                    <div className="h-64 sm:h-80 overflow-y-auto border rounded">
+                    <div className="h-32 sm:h-40 overflow-y-auto border rounded">
                       {companiesLoading ? (
                         <div className="text-center py-6 sm:py-8 text-gray-500">
                           <div className="flex items-center justify-center gap-2">
@@ -663,8 +711,8 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                       className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors min-h-[44px] flex items-center justify-center"
                       disabled={!selectedCompanyForDept}
                     >
-                      <span className="hidden sm:inline">➡️ Next: Select Departments</span>
-                      <span className="sm:hidden">➡️ Next</span>
+                      <span className="hidden sm:inline">Continue to Select Departments</span>
+                      <span className="sm:hidden">Continue</span>
                     </button>
                     <div className="flex gap-2">
                       <button
@@ -676,8 +724,8 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                         }}
                         className="flex-1 px-3 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg text-xs transition-colors min-h-[40px] flex items-center justify-center"
                       >
-                        <span className="hidden sm:inline">🏢 Skip to Departments Only</span>
-                        <span className="sm:hidden">🏢 Skip</span>
+                        <span className="hidden sm:inline">Add Departments Without Company</span>
+                        <span className="sm:hidden">Dept Only</span>
                       </button>
                       <button
                         type="button"
@@ -721,7 +769,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                       }`}
                     />
                     
-                    <div className="h-64 sm:h-80 overflow-y-auto border rounded">
+                    <div className="h-32 sm:h-40 overflow-y-auto border rounded">
                       {DEPARTMENTS
                         .filter(dept => 
                           dept.toLowerCase().includes(departmentSearch.toLowerCase())
@@ -758,47 +806,25 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
 
                   {/* Action Buttons for Step 2 */}
                   <div className="flex flex-col gap-2 pt-3 border-t border-gray-200 dark:border-gray-600">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Add selected departments with company
-                        if (selectedDepartments.length > 0 && selectedCompanyForDept) {
-                          const newAssociation: EmailAssociation = {
-                            company_id: selectedCompanyForDept.record_id,
-                            departments: selectedDepartments
-                          };
-                          setAssociations(prev => [...prev, newAssociation]);
-                        } else if (selectedDepartments.length > 0) {
-                          // Department only (unknown company)
-                          const newAssociation: EmailAssociation = {
-                            departments: selectedDepartments
-                          };
-                          setAssociations(prev => [...prev, newAssociation]);
-                        }
-                        if (onChange && !hasChangedOnce) {
-                          setHasChangedOnce(true);
-                          onChange();
-                        }
-                        setSelectedDepartments([]);
-                        setSelectedCompanyForDept(null);
-                        setModalStep('company');
-                        setShowCompanyModal(false);
-                      }}
-                      className="w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors min-h-[44px] flex items-center justify-center"
-                      disabled={selectedDepartments.length === 0}
-                    >
-                      <span className="hidden sm:inline">✅ Add Selected Departments ({selectedDepartments.length})</span>
-                      <span className="sm:hidden">✅ Add ({selectedDepartments.length})</span>
-                    </button>
-                    {selectedCompanyForDept && (
+                    {/* Main Action Buttons - Side by Side */}
+                    <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => {
-                          // Add company only (no departments)
-                          const newAssociation: EmailAssociation = {
-                            company_id: selectedCompanyForDept.record_id
-                          };
-                          setAssociations(prev => [...prev, newAssociation]);
+                          // Add selected departments with company
+                          if (selectedDepartments.length > 0 && selectedCompanyForDept) {
+                            const newAssociation: EmailAssociation = {
+                              company_id: selectedCompanyForDept.record_id,
+                              departments: selectedDepartments
+                            };
+                            setAssociations(prev => [...prev, newAssociation]);
+                          } else if (selectedDepartments.length > 0) {
+                            // Department only (unknown company)
+                            const newAssociation: EmailAssociation = {
+                              departments: selectedDepartments
+                            };
+                            setAssociations(prev => [...prev, newAssociation]);
+                          }
                           if (onChange && !hasChangedOnce) {
                             setHasChangedOnce(true);
                             onChange();
@@ -808,20 +834,46 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                           setModalStep('company');
                           setShowCompanyModal(false);
                         }}
-                        className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors min-h-[44px] flex items-center justify-center"
+                        className="flex-1 px-2 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs transition-colors min-h-[44px] flex items-center justify-center"
+                        disabled={selectedDepartments.length === 0}
                       >
-                        <span className="hidden sm:inline">📋 Add Company Only (No Departments)</span>
-                        <span className="sm:hidden">📋 Company Only</span>
+                        <span className="hidden sm:inline">Add {selectedDepartments.length} Dept{selectedDepartments.length !== 1 ? 's' : ''}</span>
+                        <span className="sm:hidden">Add {selectedDepartments.length}</span>
                       </button>
-                    )}
+                      {selectedCompanyForDept && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            // Add company only (no departments)
+                            const newAssociation: EmailAssociation = {
+                              company_id: selectedCompanyForDept.record_id
+                            };
+                            setAssociations(prev => [...prev, newAssociation]);
+                            if (onChange && !hasChangedOnce) {
+                              setHasChangedOnce(true);
+                              onChange();
+                            }
+                            setSelectedDepartments([]);
+                            setSelectedCompanyForDept(null);
+                            setModalStep('company');
+                            setShowCompanyModal(false);
+                          }}
+                          className="flex-1 px-2 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs transition-colors min-h-[44px] flex items-center justify-center"
+                        >
+                          <span className="hidden sm:inline">Add Company Only</span>
+                          <span className="sm:hidden">Company Only</span>
+                        </button>
+                      )}
+                    </div>
+                    {/* Navigation Buttons */}
                     <div className="flex gap-2">
                       <button
                         type="button"
                         onClick={() => setModalStep('company')}
                         className="flex-1 px-3 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg text-xs transition-colors min-h-[40px] flex items-center justify-center"
                       >
-                        <span className="hidden sm:inline">⬅️ Back</span>
-                        <span className="sm:hidden">⬅️</span>
+                        <span className="hidden sm:inline">Back to Company Selection</span>
+                        <span className="sm:hidden">Back</span>
                       </button>
                       <button
                         type="button"
@@ -848,7 +900,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
       {/* Person Selection Modal */}
       {showPersonModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-in fade-in duration-200">
-          <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg w-full max-w-[95vw] sm:max-w-xl h-full max-h-[95vh] sm:max-h-[80vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 duration-300`}>
+          <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg w-full max-w-[95vw] sm:max-w-xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 duration-300`}>
             <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-purple-500 to-purple-600 text-white flex-shrink-0">
               <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -887,7 +939,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                   />
                 </div>
 
-                <div className="flex-1 min-h-[200px] overflow-y-auto border rounded">
+                <div className="h-32 sm:h-40 overflow-y-auto border rounded">
                   {personsLoading ? (
                     <div className="text-center py-6 sm:py-8 text-gray-500">
                       <div className="flex items-center justify-center gap-2">
