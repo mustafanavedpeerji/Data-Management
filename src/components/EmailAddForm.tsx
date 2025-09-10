@@ -260,7 +260,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
           companyGroups[key] = [];
         }
         companyGroups[key].push(assoc);
-      } else if (assoc.department) {
+      } else if (assoc.departments && assoc.departments.length > 0) {
         // Department only (unknown company)
         const key = 'unknown_company';
         if (!companyGroups[key]) {
@@ -399,8 +399,8 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                         : getCompanyName(parseInt(companyKey));
                       
                       // Separate company-only vs company+department associations
-                      const companyOnlyAssocs = groupAssocs.filter(a => !a.department);
-                      const deptAssocs = groupAssocs.filter(a => a.department);
+                      const companyOnlyAssocs = groupAssocs.filter(a => !a.departments || a.departments.length === 0);
+                      const deptAssocs = groupAssocs.filter(a => a.departments && a.departments.length > 0);
                       
                       return (
                         <div
@@ -422,7 +422,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                                 associations.forEach((assoc, index) => {
                                   if (
                                     (assoc.company_id?.toString() === companyKey) ||
-                                    (companyKey === 'unknown_company' && !assoc.company_id && assoc.department)
+                                    (companyKey === 'unknown_company' && !assoc.company_id && assoc.departments && assoc.departments.length > 0)
                                   ) {
                                     indicesToRemove.push(index);
                                   }
@@ -452,14 +452,16 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                               <div className="text-xs text-gray-600 dark:text-gray-400">Departments:</div>
                               <div className="flex flex-wrap gap-1">
                                 {deptAssocs.map((assoc, idx) => (
-                                  <span
-                                    key={idx}
-                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${theme === 'dark' ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'}`}
-                                  >
-                                    <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                                    {assoc.department}
-                                  </span>
-                                ))}
+                                  assoc.departments?.map((dept, deptIdx) => (
+                                    <span
+                                      key={`${idx}-${deptIdx}`}
+                                      className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs ${theme === 'dark' ? 'bg-green-900/30 text-green-300' : 'bg-green-100 text-green-700'}`}
+                                    >
+                                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                                      {dept}
+                                    </span>
+                                  ))
+                                ))
                               </div>
                             </div>
                           )}
@@ -761,21 +763,17 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                       onClick={() => {
                         // Add selected departments with company
                         if (selectedDepartments.length > 0 && selectedCompanyForDept) {
-                          selectedDepartments.forEach(department => {
-                            const newAssociation: EmailAssociation = {
-                              company_id: selectedCompanyForDept.record_id,
-                              department
-                            };
-                            setAssociations(prev => [...prev, newAssociation]);
-                          });
+                          const newAssociation: EmailAssociation = {
+                            company_id: selectedCompanyForDept.record_id,
+                            departments: selectedDepartments
+                          };
+                          setAssociations(prev => [...prev, newAssociation]);
                         } else if (selectedDepartments.length > 0) {
                           // Department only (unknown company)
-                          selectedDepartments.forEach(department => {
-                            const newAssociation: EmailAssociation = {
-                              department
-                            };
-                            setAssociations(prev => [...prev, newAssociation]);
-                          });
+                          const newAssociation: EmailAssociation = {
+                            departments: selectedDepartments
+                          };
+                          setAssociations(prev => [...prev, newAssociation]);
                         }
                         if (onChange && !hasChangedOnce) {
                           setHasChangedOnce(true);

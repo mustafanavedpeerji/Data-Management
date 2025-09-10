@@ -10,9 +10,8 @@ interface EmailFormData {
 
 interface EmailAssociation {
   company_id?: number;
-  department?: string;
+  departments?: string[];
   person_id?: number;
-  notes?: string;
 }
 
 const EmailAddPage: React.FC = () => {
