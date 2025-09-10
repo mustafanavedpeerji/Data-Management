@@ -757,18 +757,7 @@ const PersonAddForm: React.FC<PersonAddFormProps> = ({
 
                       {/* Company Details */}
                       <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{company.company_group_print_name}</span>
-                          <span className={`px-2 py-0.5 text-xs rounded ${
-                            company.company_group_data_type === 'Company' 
-                              ? 'bg-blue-100 text-blue-700'
-                              : company.company_group_data_type === 'Group'
-                              ? 'bg-purple-100 text-purple-700'
-                              : 'bg-indigo-100 text-indigo-700'
-                          }`}>
-                            {company.company_group_data_type || 'Company'}
-                          </span>
-                        </div>
+                        <div className="text-xs">{company.company_group_print_name}</div>
                       </div>
 
                       {/* Checkbox */}

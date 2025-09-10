@@ -12,10 +12,8 @@ interface EmailFormData {
 interface EmailAssociation {
   association_id?: number;
   company_id?: number;
-  department?: string;
+  departments?: string[];
   person_id?: number;
-  association_type?: string;
-  notes?: string;
 }
 
 const EmailEditPage: React.FC = () => {
@@ -152,31 +150,46 @@ const EmailEditPage: React.FC = () => {
     if (!id) return;
 
     // Compare initial vs current associations to determine what changed
+    // For department arrays, we need to compare company+person combinations
     const initialMap = new Map(initialAssociations.map(assoc => [
-      `${assoc.company_id || ''}-${assoc.person_id || ''}-${assoc.department || ''}`,
+      `${assoc.company_id || ''}-${assoc.person_id || ''}`,
       assoc
     ]));
     
     const currentMap = new Map(currentAssociations.map(assoc => [
-      `${assoc.company_id || ''}-${assoc.person_id || ''}-${assoc.department || ''}`,
+      `${assoc.company_id || ''}-${assoc.person_id || ''}`,
       assoc
     ]));
 
     // Find associations to delete (in initial but not in current)
     const toDelete = Array.from(initialMap.values()).filter(initial => {
-      const key = `${initial.company_id || ''}-${initial.person_id || ''}-${initial.department || ''}`;
+      const key = `${initial.company_id || ''}-${initial.person_id || ''}`;
       return !currentMap.has(key);
     });
 
-    // Find associations to create (in current but not in initial)
+    // Find associations to create (in current but not in initial)  
     const toCreate = Array.from(currentMap.values()).filter(current => {
-      const key = `${current.company_id || ''}-${current.person_id || ''}-${current.department || ''}`;
+      const key = `${current.company_id || ''}-${current.person_id || ''}`;
       return !initialMap.has(key);
+    });
+
+    // Find associations to update (same company+person but different departments)
+    const toUpdate = Array.from(currentMap.values()).filter(current => {
+      const key = `${current.company_id || ''}-${current.person_id || ''}`;
+      const initial = initialMap.get(key);
+      if (initial) {
+        // Compare departments arrays
+        const initialDepts = initial.departments || [];
+        const currentDepts = current.departments || [];
+        return JSON.stringify(initialDepts.sort()) !== JSON.stringify(currentDepts.sort());
+      }
+      return false;
     });
 
     console.log('EmailEditPage: Association changes:', {
       toDelete: toDelete.length,
-      toCreate: toCreate.length
+      toCreate: toCreate.length,
+      toUpdate: toUpdate.length
     });
 
     // Delete removed associations
@@ -190,14 +203,29 @@ const EmailEditPage: React.FC = () => {
       }
     }
 
+    // Update existing associations with new departments
+    for (const assoc of toUpdate) {
+      if (assoc.association_id) {
+        console.log('EmailEditPage: Updating association:', assoc.association_id);
+        const updateData = {
+          company_id: assoc.company_id,
+          person_id: assoc.person_id,
+          departments: assoc.departments
+        };
+        const updateResponse = await apiClient.put(`/emails/associations/${assoc.association_id}`, updateData);
+        if (!updateResponse.ok) {
+          console.warn('Failed to update association:', assoc.association_id);
+        }
+      }
+    }
+
     // Create new associations
     for (const assoc of toCreate) {
       console.log('EmailEditPage: Creating association for email:', id);
       const createData = {
         company_id: assoc.company_id,
         person_id: assoc.person_id,
-        department: assoc.department,
-        notes: assoc.notes
+        departments: assoc.departments
       };
       const createResponse = await apiClient.post(`/emails/${id}/associations`, createData);
       if (!createResponse.ok) {
