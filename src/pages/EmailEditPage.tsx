@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams } from 'react-router';
 import { useNavigation } from '../context/NavigationContext';
 import EmailAddForm from '../components/EmailAddForm';
 import apiClient from '../config/apiClient';
@@ -10,6 +10,7 @@ interface EmailFormData {
 }
 
 interface EmailAssociation {
+  association_id?: number;
   company_id?: number;
   department?: string;
   person_id?: number;
@@ -19,10 +20,50 @@ interface EmailAssociation {
 
 const EmailEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { navigateWithConfirm } = useNavigation();
+  const { navigateWithConfirm, setUnsavedChanges } = useNavigation();
   const [loading, setLoading] = useState(false);
   const [initialData, setInitialData] = useState<Partial<EmailFormData>>({});
+  const [initialAssociations, setInitialAssociations] = useState<EmailAssociation[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [companies, setCompanies] = useState<{[key: number]: string}>({});
+  const [persons, setPersons] = useState<{[key: number]: string}>({});
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Connect local unsaved changes state to navigation context
+  useEffect(() => {
+    setUnsavedChanges(hasUnsavedChanges);
+  }, [hasUnsavedChanges, setUnsavedChanges]);
+
+  console.log('EmailEditPage: Component rendered with ID:', id);
+
+  // Load companies and persons for name lookup
+  const loadNamesData = async () => {
+    try {
+      // Load companies
+      const companiesResponse = await apiClient.get('/companies/all');
+      if (companiesResponse.ok) {
+        const companiesData = await companiesResponse.json();
+        const companiesMap = companiesData.reduce((acc: {[key: number]: string}, company: any) => {
+          acc[company.record_id] = company.company_group_print_name;
+          return acc;
+        }, {});
+        setCompanies(companiesMap);
+      }
+
+      // Load persons
+      const personsResponse = await apiClient.get('/persons/all');
+      if (personsResponse.ok) {
+        const personsData = await personsResponse.json();
+        const personsMap = personsData.reduce((acc: {[key: number]: string}, person: any) => {
+          acc[person.record_id] = person.person_print_name;
+          return acc;
+        }, {});
+        setPersons(personsMap);
+      }
+    } catch (error) {
+      console.error('Error loading names data:', error);
+    }
+  };
 
   // Load existing email data
   useEffect(() => {
@@ -33,11 +74,18 @@ const EmailEditPage: React.FC = () => {
         const response = await apiClient.get(`/emails/${id}`);
         if (response.ok) {
           const email = await response.json();
+          console.log('EmailEditPage: Full email data received:', email);
           
           setInitialData({
             email_address: email.email_address,
             is_active: email.is_active || 'Active'
           });
+
+          // Set associations if they exist
+          if (email.associations) {
+            console.log('EmailEditPage: Setting associations:', email.associations);
+            setInitialAssociations(email.associations);
+          }
         } else {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
@@ -51,24 +99,34 @@ const EmailEditPage: React.FC = () => {
     };
 
     loadEmailData();
-  }, [id, navigate]);
+    loadNamesData();
+  }, [id, navigateWithConfirm]);
 
   const handleSubmit = async (formData: EmailFormData, associations: EmailAssociation[]) => {
     if (!id) return;
     
+    // Clear unsaved changes flag immediately when user submits
+    setHasUnsavedChanges(false);
     setLoading(true);
     try {
-      // Update email data
-      const response = await apiClient.put(`/emails/${id}`, formData);
+      // Step 1: Update the email data
+      console.log('EmailEditPage: Updating email data');
+      const emailResponse = await apiClient.put(`/emails/${id}`, formData);
       
-      if (response.ok) {
-        console.log('Email updated successfully');
-        navigateWithConfirm('/emails');
-      } else {
-        const errorData = await response.json().catch(() => null);
-        const errorMessage = errorData?.detail || `HTTP ${response.status}: ${response.statusText}`;
+      if (!emailResponse.ok) {
+        const errorData = await emailResponse.json().catch(() => null);
+        const errorMessage = errorData?.detail || `HTTP ${emailResponse.status}: ${emailResponse.statusText}`;
         throw new Error(errorMessage);
       }
+
+      // Step 2: Handle associations - compare initial vs current
+      console.log('EmailEditPage: Handling association updates');
+      await handleAssociationUpdates(associations);
+      
+      console.log('Email and associations updated successfully');
+      // Clear unsaved changes flag and navigate without confirmation since data was saved
+      setHasUnsavedChanges(false);
+      navigateWithConfirm('/emails');
     } catch (error: any) {
       console.error('Error updating email:', error);
       
@@ -90,6 +148,64 @@ const EmailEditPage: React.FC = () => {
     }
   };
 
+  const handleAssociationUpdates = async (currentAssociations: EmailAssociation[]) => {
+    if (!id) return;
+
+    // Compare initial vs current associations to determine what changed
+    const initialMap = new Map(initialAssociations.map(assoc => [
+      `${assoc.company_id || ''}-${assoc.person_id || ''}-${assoc.department || ''}`,
+      assoc
+    ]));
+    
+    const currentMap = new Map(currentAssociations.map(assoc => [
+      `${assoc.company_id || ''}-${assoc.person_id || ''}-${assoc.department || ''}`,
+      assoc
+    ]));
+
+    // Find associations to delete (in initial but not in current)
+    const toDelete = Array.from(initialMap.values()).filter(initial => {
+      const key = `${initial.company_id || ''}-${initial.person_id || ''}-${initial.department || ''}`;
+      return !currentMap.has(key);
+    });
+
+    // Find associations to create (in current but not in initial)
+    const toCreate = Array.from(currentMap.values()).filter(current => {
+      const key = `${current.company_id || ''}-${current.person_id || ''}-${current.department || ''}`;
+      return !initialMap.has(key);
+    });
+
+    console.log('EmailEditPage: Association changes:', {
+      toDelete: toDelete.length,
+      toCreate: toCreate.length
+    });
+
+    // Delete removed associations
+    for (const assoc of toDelete) {
+      if (assoc.association_id) {
+        console.log('EmailEditPage: Deleting association:', assoc.association_id);
+        const deleteResponse = await apiClient.delete(`/emails/associations/${assoc.association_id}`);
+        if (!deleteResponse.ok) {
+          console.warn('Failed to delete association:', assoc.association_id);
+        }
+      }
+    }
+
+    // Create new associations
+    for (const assoc of toCreate) {
+      console.log('EmailEditPage: Creating association for email:', id);
+      const createData = {
+        company_id: assoc.company_id,
+        person_id: assoc.person_id,
+        department: assoc.department,
+        notes: assoc.notes
+      };
+      const createResponse = await apiClient.post(`/emails/${id}/associations`, createData);
+      if (!createResponse.ok) {
+        console.warn('Failed to create association:', createData);
+      }
+    }
+  };
+
   const handleCancel = () => {
     navigateWithConfirm('/emails');
   };
@@ -107,10 +223,18 @@ const EmailEditPage: React.FC = () => {
   return (
     <EmailAddForm
       initialData={initialData}
+      initialAssociations={initialAssociations}
       onSubmit={handleSubmit}
       onCancel={handleCancel}
+      onChange={() => {
+        if (!hasUnsavedChanges) {
+          setHasUnsavedChanges(true);
+        }
+      }}
       loading={loading}
       isEditMode={true}
+      companyLookup={companies}
+      personLookup={persons}
     />
   );
 };

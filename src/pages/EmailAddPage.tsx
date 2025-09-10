@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigation } from '../context/NavigationContext';
 import EmailAddForm from '../components/EmailAddForm';
 import apiClient from '../config/apiClient';
@@ -16,10 +16,18 @@ interface EmailAssociation {
 }
 
 const EmailAddPage: React.FC = () => {
-  const { navigateWithConfirm } = useNavigation();
+  const { navigateWithConfirm, setUnsavedChanges } = useNavigation();
   const [loading, setLoading] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Connect local unsaved changes state to navigation context
+  useEffect(() => {
+    setUnsavedChanges(hasUnsavedChanges);
+  }, [hasUnsavedChanges, setUnsavedChanges]);
 
   const handleSubmit = async (formData: EmailFormData, associations: EmailAssociation[]) => {
+    // Clear unsaved changes flag immediately when user submits
+    setHasUnsavedChanges(false);
     setLoading(true);
     try {
       const requestData = {
@@ -35,7 +43,8 @@ const EmailAddPage: React.FC = () => {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
       
-      // Navigate to email list page
+      // Clear unsaved changes flag and navigate to email list page
+      setHasUnsavedChanges(false);
       navigateWithConfirm('/emails');
     } catch (error: any) {
       console.error('Error creating email:', error);
@@ -72,6 +81,11 @@ const EmailAddPage: React.FC = () => {
     <EmailAddForm
       onSubmit={handleSubmit}
       onCancel={handleCancel}
+      onChange={() => {
+        if (!hasUnsavedChanges) {
+          setHasUnsavedChanges(true);
+        }
+      }}
       loading={loading}
       isEditMode={false}
     />

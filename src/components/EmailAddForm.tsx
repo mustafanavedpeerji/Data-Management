@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigation } from '../context/NavigationContext';
 import { useTheme } from '../context/ThemeContext';
 import apiClient from '../config/apiClient';
@@ -11,6 +11,7 @@ interface EmailFormData {
 
 // Association interface
 interface EmailAssociation {
+  association_id?: number;
   company_id?: number;
   department?: string;
   person_id?: number;
@@ -44,11 +45,14 @@ interface Person {
 // Props interface
 interface EmailAddFormProps {
   initialData?: Partial<EmailFormData>;
+  initialAssociations?: EmailAssociation[];
   onSubmit?: (data: EmailFormData, associations: EmailAssociation[]) => void;
   onCancel?: () => void;
   onChange?: () => void;
   loading?: boolean;
   isEditMode?: boolean;
+  companyLookup?: {[key: number]: string};
+  personLookup?: {[key: number]: string};
 }
 
 
@@ -66,24 +70,27 @@ const DEPARTMENTS = [
 
 const EmailAddForm: React.FC<EmailAddFormProps> = ({
   initialData = {},
+  initialAssociations = [],
   onSubmit,
   onCancel,
   onChange,
   loading = false,
   isEditMode = false,
+  companyLookup = {},
+  personLookup = {},
 }) => {
   const { theme } = useTheme();
-  const { navigateWithConfirm } = useNavigation();
+  const { navigateWithConfirm, setUnsavedChanges } = useNavigation();
 
   // Form data state
-  const [formData, setFormData] = useState<EmailFormData>({
+  const [formData, setFormData] = useState<EmailFormData>(() => ({
     email_address: '',
     is_active: 'Active',
     ...initialData,
-  });
+  }));
 
   // Associations state
-  const [associations, setAssociations] = useState<EmailAssociation[]>([]);
+  const [associations, setAssociations] = useState<EmailAssociation[]>(() => initialAssociations || []);
 
   // Modal states
   const [showCompanyModal, setShowCompanyModal] = useState(false);
@@ -105,32 +112,8 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
   const [companiesError, setCompaniesError] = useState<string | null>(null);
   const [personsError, setPersonsError] = useState<string | null>(null);
 
-  // Change tracking
-  const [initialDataLoaded, setInitialDataLoaded] = useState(false);
-  const [initialFormData, setInitialFormData] = useState<EmailFormData | null>(null);
-
-  // Initialize form data
-  useEffect(() => {
-    if (initialData && Object.keys(initialData).length > 0) {
-      const updatedFormData = { ...formData, ...initialData };
-      setFormData(updatedFormData);
-      setInitialFormData(updatedFormData);
-      setInitialDataLoaded(true);
-    } else {
-      setInitialFormData(formData);
-      setInitialDataLoaded(true);
-    }
-  }, [initialData]);
-
-  // Track changes
-  useEffect(() => {
-    if (initialDataLoaded && initialFormData && onChange) {
-      const hasChanges = JSON.stringify(formData) !== JSON.stringify(initialFormData) || associations.length > 0;
-      if (hasChanges) {
-        onChange();
-      }
-    }
-  }, [formData, associations, initialDataLoaded, initialFormData, onChange]);
+  // Simple change tracking
+  const [hasChangedOnce, setHasChangedOnce] = useState(false);
 
   // Load companies
   const loadCompanies = async (search: string = '') => {
@@ -192,6 +175,12 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
       ...prev,
       [field]: value
     }));
+    
+    // Call onChange callback if provided and not already called
+    if (onChange && !hasChangedOnce) {
+      setHasChangedOnce(true);
+      onChange();
+    }
   };
 
   // Add person association
@@ -200,18 +189,28 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
       person_id: person.record_id
     };
     setAssociations(prev => [...prev, newAssociation]);
+    if (onChange && !hasChangedOnce) {
+      setHasChangedOnce(true);
+      onChange();
+    }
     setShowPersonModal(false);
   };
 
   // Remove association
   const removeAssociation = (index: number) => {
     setAssociations(prev => prev.filter((_, i) => i !== index));
+    if (onChange && !hasChangedOnce) {
+      setHasChangedOnce(true);
+      onChange();
+    }
   };
 
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (onSubmit) {
+      // Reset the changed flag since user is submitting (saving changes)
+      setHasChangedOnce(false);
       onSubmit(formData, associations);
     }
   };
@@ -227,12 +226,22 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
 
   // Get company name by ID
   const getCompanyName = (companyId: number) => {
+    // First try the lookup prop (from edit page)
+    if (companyLookup[companyId]) {
+      return companyLookup[companyId];
+    }
+    // Fall back to local companies array (from modal search)
     const company = companies.find(c => c.record_id === companyId);
     return company ? company.company_group_print_name : `Company ${companyId}`;
   };
 
   // Get person name by ID
   const getPersonName = (personId: number) => {
+    // First try the lookup prop (from edit page)
+    if (personLookup[personId]) {
+      return personLookup[personId];
+    }
+    // Fall back to local persons array (from modal search)
     const person = persons.find(p => p.record_id === personId);
     return person ? person.person_print_name : `Person ${personId}`;
   };
@@ -790,6 +799,10 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                             setAssociations(prev => [...prev, newAssociation]);
                           });
                         }
+                        if (onChange && !hasChangedOnce) {
+                          setHasChangedOnce(true);
+                          onChange();
+                        }
                         setSelectedDepartments([]);
                         setSelectedCompanyForDept(null);
                         setModalStep('company');
@@ -810,6 +823,10 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                             company_id: selectedCompanyForDept.record_id
                           };
                           setAssociations(prev => [...prev, newAssociation]);
+                          if (onChange && !hasChangedOnce) {
+                            setHasChangedOnce(true);
+                            onChange();
+                          }
                           setSelectedDepartments([]);
                           setSelectedCompanyForDept(null);
                           setModalStep('company');
