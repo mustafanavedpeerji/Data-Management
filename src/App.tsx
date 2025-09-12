@@ -29,6 +29,9 @@ import AuditLogsPage from "./pages/AuditLogsPage";
 import EmailPage from "./pages/EmailPage";
 import EmailAddPage from "./pages/EmailAddPage";
 import EmailEditPage from "./pages/EmailEditPage";
+import CellPhonePage from "./pages/CellPhonePage";
+import CellPhoneAddPage from "./pages/CellPhoneAddPage";
+import CellPhoneEditPage from "./pages/CellPhoneEditPage";
 
 export default function App() {
   return (
@@ -52,6 +55,9 @@ export default function App() {
             <Route path="/emails" element={<EmailPage />} />
             <Route path="/emails/add" element={<EmailAddPage />} />
             <Route path="/emails/edit/:id" element={<EmailEditPage />} />
+            <Route path="/cell-phones" element={<CellPhonePage />} />
+            <Route path="/cell-phones/add" element={<CellPhoneAddPage />} />
+            <Route path="/cell-phones/edit/:id" element={<CellPhoneEditPage />} />
 
             <Route index path="/" element={<Home />} />
 

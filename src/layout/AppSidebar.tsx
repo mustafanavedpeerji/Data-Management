@@ -17,6 +17,7 @@ import {
   PlusIcon,
   TableIcon,
   UserCircleIcon,
+  ChatIcon,
 } from "../icons";
 import { useSidebar } from "../context/SidebarContext";
 import SidebarWidget from "./SidebarWidget";
@@ -68,6 +69,16 @@ const navItems: NavItem[] = [
   icon: <PlusIcon />,
   name: "Add Email",
   path: "/emails/add",
+  },
+  {
+  icon: <ChatIcon />,
+  name: "Cell Phones",
+  path: "/cell-phones",
+  },
+  {
+  icon: <PlusIcon />,
+  name: "Add Cell Phone",
+  path: "/cell-phones/add",
   },
   {
     icon: <GridIcon />,
