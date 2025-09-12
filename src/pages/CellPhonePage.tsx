@@ -160,7 +160,7 @@ const CellPhonePage: React.FC = () => {
           <h1 className="text-2xl font-semibold">Cell Phone Management</h1>
           <button
             onClick={() => navigateWithConfirm('/cell-phones/add')}
-            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary/90"
+            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors"
           >
             Add Cell Phone
           </button>
@@ -236,7 +236,7 @@ const CellPhonePage: React.FC = () => {
                             e.stopPropagation();
                             navigateWithConfirm(`/cell-phones/edit/${phone.phone_id}`);
                           }}
-                          className="text-blue-600 hover:text-blue-800 text-sm"
+                          className="text-green-600 hover:text-green-800 text-sm"
                         >
                           Edit
                         </button>
@@ -268,7 +268,7 @@ const CellPhonePage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => navigateWithConfirm(`/cell-phones/edit/${selectedPhone.phone_id}`)}
-                  className="px-3 py-1 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
+                  className="px-3 py-1 text-sm bg-green-500 hover:bg-green-600 text-white rounded-md transition-colors"
                 >
                   Edit
                 </button>
@@ -350,7 +350,7 @@ const CellPhonePage: React.FC = () => {
                           {/* Company & Departments */}
                           {hasCompanyAssociations && (
                             <div>
-                              <h5 className="text-sm font-semibold text-blue-600 dark:text-blue-400 mb-2 border-b border-blue-200 dark:border-blue-700 pb-1">
+                              <h5 className="text-sm font-semibold text-green-600 dark:text-green-400 mb-2 border-b border-green-200 dark:border-green-700 pb-1">
                                 🏢 Companies & Departments
                               </h5>
                               <div className="space-y-2">
@@ -367,11 +367,11 @@ const CellPhonePage: React.FC = () => {
                                   return (
                                     <div
                                       key={companyKey}
-                                      className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-gray-700/50 border-gray-600' : 'bg-blue-50 border-blue-200'}`}
+                                      className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-gray-700/50 border-gray-600' : 'bg-green-50 border-green-200'}`}
                                     >
                                       <div className="flex items-center gap-2 mb-2">
-                                        <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                                        <span className="font-medium text-blue-700 dark:text-blue-300">
+                                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                        <span className="font-medium text-green-700 dark:text-green-300">
                                           {companyName}
                                         </span>
                                       </div>

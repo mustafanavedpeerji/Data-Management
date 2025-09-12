@@ -299,7 +299,7 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
     <div className={`w-full max-w-none mx-auto p-3 text-sm ${theme === 'dark' ? 'text-gray-100' : 'text-gray-900'}`}>
       <form onSubmit={handleSubmit} className="space-y-3">
         {/* Compact Header */}
-        <div className="flex items-center justify-between p-3 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg text-white">
+        <div className="flex items-center justify-between p-3 bg-gradient-to-r from-orange-500 to-red-600 rounded-lg text-white">
           <div className="flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -413,7 +413,7 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 {/* Company & Departments Column */}
                 <div className="space-y-3">
-                  <h4 className="text-sm font-semibold text-blue-600 dark:text-blue-400 border-b border-blue-200 dark:border-blue-700 pb-2">
+                  <h4 className="text-sm font-semibold text-green-600 dark:text-green-400 border-b border-green-200 dark:border-green-700 pb-2">
                     🏢 Companies & Departments ({Object.keys(companyGroups).length})
                   </h4>
                   {hasCompanyAssociations ? (
@@ -430,12 +430,12 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
                       return (
                         <div
                           key={companyKey}
-                          className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-gray-700/50 border-gray-600' : 'bg-blue-50 border-blue-200'} transition-all duration-200`}
+                          className={`p-3 rounded-lg border ${theme === 'dark' ? 'bg-gray-700/50 border-gray-600' : 'bg-green-50 border-green-200'} transition-all duration-200`}
                         >
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center gap-2">
-                              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                              <span className="font-medium text-blue-700 dark:text-blue-300 text-sm">
+                              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                              <span className="font-medium text-green-700 dark:text-green-300 text-sm">
                                 {companyName}
                               </span>
                             </div>
@@ -477,7 +477,7 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
                                       }
                                     }
                                   }}
-                                  className="text-blue-500 hover:text-blue-700 hover:bg-blue-100 dark:hover:bg-blue-900/20 rounded p-1 transition-colors"
+                                  className="text-green-500 hover:text-green-700 hover:bg-green-100 dark:hover:bg-green-900/20 rounded p-1 transition-colors"
                                   title="Edit departments for this company"
                                 >
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -664,7 +664,7 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
                         setCompanySearch(e.target.value);
                         loadCompanies(e.target.value);
                       }}
-                      className={`w-full px-3 py-2 border rounded-lg text-sm mb-3 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      className={`w-full px-3 py-2 border rounded-lg text-sm mb-3 transition-all duration-200 focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                         theme === 'dark'
                           ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                           : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
@@ -687,7 +687,7 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
                           <div className="text-red-500 text-xs sm:text-sm mb-2">{companiesError}</div>
                           <button
                             onClick={() => loadCompanies(companySearch)}
-                            className="text-xs text-blue-600 hover:text-blue-800 underline"
+                            className="text-xs text-green-600 hover:text-green-800 underline"
                           >
                             Try again
                           </button>
@@ -706,8 +706,8 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
                             className={`p-3 border-b cursor-pointer transition-colors ${
                               selectedCompanyForDept?.record_id === company.record_id
                                 ? theme === 'dark' 
-                                  ? 'bg-blue-900/30 border-blue-600'
-                                  : 'bg-blue-50 border-blue-300'
+                                  ? 'bg-green-900/30 border-green-600'
+                                  : 'bg-green-50 border-green-300'
                                 : theme === 'dark' 
                                   ? 'hover:bg-gray-700 border-gray-700'
                                   : 'hover:bg-gray-50 border-gray-200'
@@ -718,7 +718,7 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
                               <div className="text-xs truncate">{company.company_group_print_name}</div>
                             </div>
                             {selectedCompanyForDept?.record_id === company.record_id && (
-                              <svg className="w-5 h-5 text-blue-600 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-5 h-5 text-green-600 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                               </svg>
                             )}
@@ -733,7 +733,7 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
                     <button
                       type="button"
                       onClick={() => setModalStep('department')}
-                      className="w-full px-4 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm transition-colors min-h-[44px] flex items-center justify-center"
+                      className="w-full px-4 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm transition-colors min-h-[44px] flex items-center justify-center"
                       disabled={!selectedCompanyForDept}
                     >
                       <span className="hidden sm:inline">Continue to Select Departments</span>
@@ -773,9 +773,9 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
                   {/* Selected Company Display */}
                   {selectedCompanyForDept && (
                     <div className={`p-3 rounded border ${
-                      theme === 'dark' ? 'bg-blue-900/20 border-blue-600' : 'bg-blue-50 border-blue-300'
+                      theme === 'dark' ? 'bg-green-900/20 border-green-600' : 'bg-green-50 border-green-300'
                     }`}>
-                      <div className="text-xs sm:text-sm font-medium text-blue-600 mb-1">Selected Company:</div>
+                      <div className="text-xs sm:text-sm font-medium text-green-600 mb-1">Selected Company:</div>
                       <div className="font-medium text-sm sm:text-base truncate">{selectedCompanyForDept.company_group_print_name}</div>
                     </div>
                   )}
@@ -787,7 +787,7 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
                       placeholder="Search departments..."
                       value={departmentSearch}
                       onChange={(e) => setDepartmentSearch(e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-lg text-sm mb-3 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      className={`w-full px-3 py-2 border rounded-lg text-sm mb-3 transition-all duration-200 focus:ring-2 focus:ring-green-500 focus:border-green-500 ${
                         theme === 'dark'
                           ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
                           : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
@@ -883,7 +883,7 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
                             setModalStep('company');
                             setShowCompanyModal(false);
                           }}
-                          className="flex-1 px-2 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-xs transition-colors min-h-[44px] flex items-center justify-center"
+                          className="flex-1 px-2 py-3 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs transition-colors min-h-[44px] flex items-center justify-center"
                         >
                           <span className="hidden sm:inline">Add Company Only</span>
                           <span className="sm:hidden">Company Only</span>
@@ -980,7 +980,7 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
                       <div className="text-red-500 text-xs sm:text-sm mb-2">{personsError}</div>
                       <button
                         onClick={() => loadPersons(personSearch)}
-                        className="text-xs text-blue-600 hover:text-blue-800 underline"
+                        className="text-xs text-green-600 hover:text-green-800 underline"
                       >
                         Try again
                       </button>

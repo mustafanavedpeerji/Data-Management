@@ -7,6 +7,8 @@ import apiClient from '../config/apiClient';
 interface EmailFormData {
   email_address: string;
   is_active: 'Active' | 'Inactive';
+  gender?: 'Male' | 'Female' | 'Unknown';
+  city?: string;
 }
 
 // Association interface
@@ -54,6 +56,19 @@ interface EmailAddFormProps {
 }
 
 
+// Gender options
+const GENDER_OPTIONS = ['Male', 'Female', 'Unknown'];
+
+// Pakistani cities
+const PAKISTANI_CITIES = [
+  'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad', 'Multan', 'Peshawar', 'Quetta',
+  'Gujranwala', 'Sialkot', 'Sargodha', 'Bahawalpur', 'Sukkur', 'Larkana', 'Hyderabad',
+  'Rahim Yar Khan', 'Gujrat', 'Kasur', 'Mardan', 'Mingora', 'Dera Ghazi Khan', 'Nawabshah',
+  'Sahiwal', 'Mirpur Khas', 'Okara', 'Burewala', 'Jacobabad', 'Saddiqabad', 'Kohat',
+  'Muridke', 'Muzaffargarh', 'Khanpur', 'Gojra', 'Mandi Bahauddin', 'Abbottabad', 'Turbat',
+  'Dadu', 'Bahawalnagar', 'Ahmadpur East', 'Vihari', 'Kotli', 'Dera Ismail Khan', 'Wah Cantonment'
+];
+
 // Departments (matching backend enum)
 const DEPARTMENTS = [
   'Board Member', 'Management All', 'Management Operations', 'Management Administration',
@@ -84,6 +99,8 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
   const [formData, setFormData] = useState<EmailFormData>(() => ({
     email_address: '',
     is_active: 'Active',
+    gender: undefined,
+    city: undefined,
     ...initialData,
   }));
 
@@ -113,18 +130,32 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
   // Simple change tracking
   const [hasChangedOnce, setHasChangedOnce] = useState(false);
 
-  // Load companies
+  // Load companies - show recent 12 companies if no search term, search all when searching
   const loadCompanies = async (search: string = '') => {
     setCompaniesLoading(true);
     setCompaniesError(null);
     try {
-      const response = await apiClient.get(`/companies/search?q=${encodeURIComponent(search)}`);
+      let response;
+      if (search.trim()) {
+        // If search term provided, search from all companies in database
+        response = await apiClient.get(`/companies/search?q=${encodeURIComponent(search)}`);
+      } else {
+        // If no search term, get all companies and take last 12
+        response = await apiClient.get('/companies/all');
+      }
+      
       if (response.ok) {
         const responseData = await response.json();
         // Filter to only show companies (not groups or divisions)
-        const companyData = responseData.filter((item: Company) => 
+        let companyData = responseData.filter((item: Company) => 
           item.company_group_data_type === 'Company'
         );
+        
+        // If no search term, limit to last 12 companies (4x3 grid)
+        if (!search.trim()) {
+          companyData = companyData.slice(-12).reverse(); // Last 12, most recent first
+        }
+        
         setCompanies(companyData);
         setCompaniesError(null);
       } else {
@@ -298,7 +329,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
         {/* Email Information */}
         <div className={`p-2 rounded border ${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
           <h3 className="text-sm font-medium mb-1">Email Information</h3>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
             <div>
               <label className="block text-xs mb-1">Email Address *</label>
               <input
@@ -323,6 +354,36 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
               >
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs mb-1">Gender</label>
+              <select
+                value={formData.gender || ''}
+                onChange={(e) => handleInputChange('gender', e.target.value as 'Male' | 'Female' | 'Unknown' | undefined)}
+                className={`w-full px-2 py-1 rounded border text-xs ${
+                  theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
+                }`}
+              >
+                <option value="">Select Gender</option>
+                {GENDER_OPTIONS.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs mb-1">City</label>
+              <select
+                value={formData.city || ''}
+                onChange={(e) => handleInputChange('city', e.target.value)}
+                className={`w-full px-2 py-1 rounded border text-xs ${
+                  theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
+                }`}
+              >
+                <option value="">Select City</option>
+                {PAKISTANI_CITIES.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -592,7 +653,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
       {/* Company Selection Modal */}
       {showCompanyModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-in fade-in duration-200">
-          <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg w-full max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 duration-300`}>
+          <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg w-full max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 duration-300`}>
             <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white flex-shrink-0">
               <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -646,20 +707,20 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                       }`}
                     />
                     
-                    <div className="h-32 sm:h-40 overflow-y-auto border rounded">
+                    <div className="border rounded p-3">
                       {companiesLoading ? (
-                        <div className="text-center py-6 sm:py-8 text-gray-500">
+                        <div className="text-center py-8 text-gray-500">
                           <div className="flex items-center justify-center gap-2">
                             <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                               <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0 1 4 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            <span className="text-xs sm:text-sm">Loading companies...</span>
+                            <span className="text-sm">Loading companies...</span>
                           </div>
                         </div>
                       ) : companiesError ? (
-                        <div className="text-center py-6 sm:py-8">
-                          <div className="text-red-500 text-xs sm:text-sm mb-2">{companiesError}</div>
+                        <div className="text-center py-8">
+                          <div className="text-red-500 text-sm mb-2">{companiesError}</div>
                           <button
                             onClick={() => loadCompanies(companySearch)}
                             className="text-xs text-blue-600 hover:text-blue-800 underline"
@@ -668,37 +729,57 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                           </button>
                         </div>
                       ) : companies.length === 0 ? (
-                        <div className="text-center py-6 sm:py-8 text-gray-500">
-                          <div className="text-xs sm:text-sm">No companies found</div>
+                        <div className="text-center py-8 text-gray-500">
+                          <div className="text-sm">No companies found</div>
                           {companySearch && (
                             <div className="text-xs text-gray-400 mt-1">Try a different search term</div>
                           )}
                         </div>
                       ) : (
-                        companies.map((company) => (
-                          <div
-                            key={company.record_id}
-                            className={`p-3 border-b cursor-pointer transition-colors ${
-                              selectedCompanyForDept?.record_id === company.record_id
-                                ? theme === 'dark' 
-                                  ? 'bg-blue-900/30 border-blue-600'
-                                  : 'bg-blue-50 border-blue-300'
-                                : theme === 'dark' 
-                                  ? 'hover:bg-gray-700 border-gray-700'
-                                  : 'hover:bg-gray-50 border-gray-200'
-                            } min-h-[44px] flex items-center`}
-                            onClick={() => setSelectedCompanyForDept(company)}
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="text-xs truncate">{company.company_group_print_name}</div>
-                            </div>
-                            {selectedCompanyForDept?.record_id === company.record_id && (
-                              <svg className="w-5 h-5 text-blue-600 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                          </div>
-                        ))
+                        <div className="grid grid-cols-4 gap-3">
+                          {companies.slice(0, 12).map((company) => {
+                            const isSelected = selectedCompanyForDept?.record_id === company.record_id;
+                            return (
+                              <div
+                                key={company.record_id}
+                                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                                  isSelected
+                                    ? theme === 'dark' 
+                                      ? 'bg-blue-900/30 border-blue-600'
+                                      : 'bg-blue-50 border-blue-300'
+                                    : theme === 'dark' 
+                                      ? 'hover:bg-gray-700 border-gray-600'
+                                      : 'hover:bg-blue-50 border-gray-200'
+                                } min-h-[70px] flex flex-col justify-between`}
+                                onClick={() => setSelectedCompanyForDept(company)}
+                              >
+                                <div className="flex items-start gap-2">
+                                  <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                                    isSelected 
+                                      ? 'bg-blue-500 border-blue-500' 
+                                      : theme === 'dark' ? 'border-gray-400' : 'border-gray-300'
+                                  }`}>
+                                    {isSelected && (
+                                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-xs font-medium leading-tight break-words">{company.company_group_print_name}</div>
+                                    {company.uid && (
+                                      <div className="text-xs text-gray-500 mt-1 truncate">{company.uid}</div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {/* Fill empty cells to maintain 4x3 grid */}
+                          {Array.from({ length: Math.max(0, 12 - Math.min(companies.length, 12)) }).map((_, index) => (
+                            <div key={`empty-${index}`} className="min-h-[70px] border rounded-lg border-dashed border-gray-200 dark:border-gray-600"></div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -769,38 +850,50 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                       }`}
                     />
                     
-                    <div className="h-32 sm:h-40 overflow-y-auto border rounded">
-                      {DEPARTMENTS
-                        .filter(dept => 
-                          dept.toLowerCase().includes(departmentSearch.toLowerCase())
-                        )
-                        .map((department) => {
-                          const isSelected = selectedDepartments.includes(department);
-                          return (
-                          <div
-                            key={department}
-                            className={`p-3 border-b cursor-pointer transition-colors min-h-[44px] flex items-center justify-between ${
-                              isSelected 
-                                ? theme === 'dark' ? 'bg-green-900/30 border-green-700' : 'bg-green-100 border-green-300'
-                                : theme === 'dark' ? 'hover:bg-green-900/20 border-gray-700' : 'hover:bg-green-50 border-gray-200'
-                            }`}
-                            onClick={() => {
-                              if (isSelected) {
-                                setSelectedDepartments(prev => prev.filter(d => d !== department));
-                              } else {
-                                setSelectedDepartments(prev => [...prev, department]);
-                              }
-                            }}
-                          >
-                            <div className="text-sm truncate">{department}</div>
-                            {isSelected && (
-                              <svg className="w-5 h-5 text-green-600 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                          </div>
-                          );
-                        })}
+                    <div className="h-48 sm:h-60 overflow-y-auto border rounded p-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {DEPARTMENTS
+                          .filter(dept => 
+                            dept.toLowerCase().includes(departmentSearch.toLowerCase())
+                          )
+                          .map((department) => {
+                            const isSelected = selectedDepartments.includes(department);
+                            return (
+                              <div
+                                key={department}
+                                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                                  isSelected 
+                                    ? theme === 'dark' ? 'bg-blue-900/30 border-blue-600' : 'bg-blue-50 border-blue-300'
+                                    : theme === 'dark' ? 'hover:bg-gray-700 border-gray-600' : 'hover:bg-blue-50 border-gray-200'
+                                }`}
+                                onClick={() => {
+                                  if (isSelected) {
+                                    setSelectedDepartments(prev => prev.filter(d => d !== department));
+                                  } else {
+                                    setSelectedDepartments(prev => [...prev, department]);
+                                  }
+                                }}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                                    isSelected 
+                                      ? 'bg-blue-500 border-blue-500' 
+                                      : theme === 'dark' ? 'border-gray-400' : 'border-gray-300'
+                                  }`}>
+                                    {isSelected && (
+                                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-sm font-medium truncate">{department}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                      </div>
                     </div>
                   </div>
 
