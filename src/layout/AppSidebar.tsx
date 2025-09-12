@@ -31,120 +31,55 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   {
-  icon: <BoxCubeIcon />, // ya koi aur icon jo pasand ho
-  name: "Company",
-  path: "/company", // yeh route tumhare IndustryPage.tsx ke liye
-  },
-  {
-  icon: <GridIcon />, // ya koi aur icon jo pasand ho
-  name: "Company View",
-  path: "/company-view", // yeh route tumhare CompanyListPage.tsx ke liye
-  },
-  {
-  icon: <BoxCubeIcon />, // ya koi aur icon jo pasand ho
-  name: "Industry",
-  path: "/industry", // yeh route tumhare IndustryPage.tsx ke liye
-  },
-  {
-  icon: <UserCircleIcon />,
-  name: "Person",
-  path: "/person",
-  },
-  {
-  icon: <GridIcon />,
-  name: "Person View",
-  path: "/person-view",
-  },
-  {
-  icon: <ListIcon />,
-  name: "Audit Logs",
-  path: "/audit-logs",
-  },
-  {
-  icon: <MailIcon />,
-  name: "Emails",
-  path: "/emails",
-  },
-  {
-  icon: <PlusIcon />,
-  name: "Add Email",
-  path: "/emails/add",
-  },
-  {
-  icon: <ChatIcon />,
-  name: "Cell Phones",
-  path: "/cell-phones",
-  },
-  {
-  icon: <PlusIcon />,
-  name: "Add Cell Phone",
-  path: "/cell-phones/add",
-  },
-  {
     icon: <GridIcon />,
     name: "Dashboard",
-    subItems: [{ name: "Ecommerce", path: "/", pro: false }],
+    subItems: [{ name: "Overview", path: "/", pro: false }],
   },
   {
-    icon: <CalenderIcon />,
-    name: "Calendar",
-    path: "/calendar",
-  },
-  {
-    icon: <UserCircleIcon />,
-    name: "User Profile",
-    path: "/profile",
-  },
-  {
-    name: "Forms",
-    icon: <ListIcon />,
-    subItems: [{ name: "Form Elements", path: "/form-elements", pro: false }],
-  },
-  {
-    name: "Tables",
-    icon: <TableIcon />,
-    subItems: [{ name: "Basic Tables", path: "/basic-tables", pro: false }],
-  },
-  {
-    name: "Pages",
-    icon: <PageIcon />,
+    icon: <BoxCubeIcon />,
+    name: "Companies",
     subItems: [
-      { name: "Blank Page", path: "/blank", pro: false },
-      { name: "404 Error", path: "/error-404", pro: false },
-    ],
-  },
-];
-
-const othersItems: NavItem[] = [
-  {
-    icon: <PieChartIcon />,
-    name: "Charts",
-    subItems: [
-      { name: "Line Chart", path: "/line-chart", pro: false },
-      { name: "Bar Chart", path: "/bar-chart", pro: false },
+      { name: "Add Company", path: "/company", pro: false },
+      { name: "View Companies", path: "/company-view", pro: false }
     ],
   },
   {
     icon: <BoxCubeIcon />,
-    name: "UI Elements",
+    name: "Industries",
+    path: "/industry",
+  },
+  {
+    icon: <UserCircleIcon />,
+    name: "Persons",
     subItems: [
-      { name: "Alerts", path: "/alerts", pro: false },
-      { name: "Avatar", path: "/avatars", pro: false },
-      { name: "Badge", path: "/badge", pro: false },
-      { name: "Buttons", path: "/buttons", pro: false },
-      { name: "Images", path: "/images", pro: false },
-      { name: "Videos", path: "/videos", pro: false },
+      { name: "Add Person", path: "/person", pro: false },
+      { name: "View Persons", path: "/person-view", pro: false }
     ],
   },
   {
-    icon: <PlugInIcon />,
-    name: "Authentication",
+    icon: <MailIcon />,
+    name: "Emails",
     subItems: [
-      { name: "Sign In", path: "/signin", pro: false },
-      { name: "Sign Up", path: "/signup", pro: false },
+      { name: "Add Email", path: "/emails/add", pro: false },
+      { name: "View Emails", path: "/emails", pro: false }
     ],
   },
+  {
+    icon: <ChatIcon />,
+    name: "Cell Phones",
+    subItems: [
+      { name: "Add Cell Phone", path: "/cell-phones/add", pro: false },
+      { name: "View Cell Phones", path: "/cell-phones", pro: false }
+    ],
+  },
+  {
+    icon: <ListIcon />,
+    name: "Audit Logs",
+    path: "/audit-logs",
+  },
 ];
+
+const othersItems: NavItem[] = [];
 
 const AppSidebar: React.FC = () => {
   const { isExpanded, isMobileOpen, isHovered, setIsHovered } = useSidebar();
@@ -397,28 +332,12 @@ const AppSidebar: React.FC = () => {
                 }`}
               >
                 {isExpanded || isHovered || isMobileOpen ? (
-                  "Menu"
+                  "Business"
                 ) : (
                   <HorizontaLDots className="size-6" />
                 )}
               </h2>
               {renderMenuItems(navItems, "main")}
-            </div>
-            <div className="">
-              <h2
-                className={`mb-4 text-xs uppercase flex leading-[20px] text-gray-400 ${
-                  !isExpanded && !isHovered
-                    ? "lg:justify-center"
-                    : "justify-start"
-                }`}
-              >
-                {isExpanded || isHovered || isMobileOpen ? (
-                  "Others"
-                ) : (
-                  <HorizontaLDots />
-                )}
-              </h2>
-              {renderMenuItems(othersItems, "others")}
             </div>
           </div>
         </nav>
