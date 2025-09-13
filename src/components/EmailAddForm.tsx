@@ -57,7 +57,7 @@ interface EmailAddFormProps {
 
 
 // Gender options
-const GENDER_OPTIONS = ['Male', 'Female', 'Unknown'];
+const GENDER_OPTIONS = ['Male', 'Female'];
 
 // Pakistani cities
 const PAKISTANI_CITIES = [
@@ -173,15 +173,40 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
     }
   };
 
-  // Load persons
+  // Load persons - show recent 12 persons if no search term, search all when searching (even single character)
   const loadPersons = async (search: string = '') => {
     setPersonsLoading(true);
     setPersonsError(null);
     try {
-      const response = await apiClient.get(`/persons/search?q=${encodeURIComponent(search)}`);
+      let response;
+      const trimmedSearch = search.trim();
+      
+      if (trimmedSearch.length >= 2) {
+        // If search term is 2+ characters, use search API
+        response = await apiClient.get(`/persons/search?q=${encodeURIComponent(trimmedSearch)}`);
+      } else {
+        // For single character or no search, get all persons and filter client-side
+        response = await apiClient.get('/persons/all');
+      }
+      
       if (response.ok) {
         const responseData = await response.json();
-        setPersons(responseData);
+        
+        if (trimmedSearch.length === 0) {
+          // No search term, show last 12 persons (4x3 grid)
+          const personData = responseData.slice(-12).reverse(); // Last 12, most recent first
+          setPersons(personData);
+        } else if (trimmedSearch.length === 1) {
+          // Single character search - filter all persons client-side
+          const filteredPersons = responseData.filter((person: any) => 
+            person.person_print_name?.toLowerCase().includes(trimmedSearch.toLowerCase()) ||
+            person.full_name?.toLowerCase().includes(trimmedSearch.toLowerCase())
+          );
+          setPersons(filteredPersons.slice(0, 12)); // Limit to first 12 for grid
+        } else {
+          // 2+ character search results from API
+          setPersons(responseData.slice(0, 12));
+        }
         setPersonsError(null);
       } else {
         const errorMsg = `Error ${response.status}: Unable to load persons`;
@@ -414,7 +439,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  loadPersons();
+                  loadPersons(); // Load recent 12 persons
                   setShowPersonModal(true);
                 }}
                 className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg text-xs sm:text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow-md min-h-[44px]"
@@ -686,9 +711,9 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
               </button>
             </div>
             
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4">
-              {modalStep === 'company' ? (
-                /* STEP 1: Company Selection */
+            {modalStep === 'company' ? (
+              /* STEP 1: Company Selection */
+              <div className="flex-1 overflow-y-auto p-3 sm:p-4">
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">Search & Select Company</label>
@@ -823,82 +848,89 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                     </div>
                   </div>
                 </div>
-              ) : (
-                /* STEP 2: Department Selection */
-                <div className="space-y-4">
-                  {/* Selected Company Display */}
-                  {selectedCompanyForDept && (
-                    <div className={`p-3 rounded border ${
-                      theme === 'dark' ? 'bg-blue-900/20 border-blue-600' : 'bg-blue-50 border-blue-300'
-                    }`}>
-                      <div className="text-xs sm:text-sm font-medium text-blue-600 mb-1">Selected Company:</div>
-                      <div className="font-medium text-sm sm:text-base truncate">{selectedCompanyForDept.company_group_print_name}</div>
-                    </div>
-                  )}
+              </div>
+            ) : (
+              /* STEP 2: Department Selection */
+              <>
+                {/* Scrollable Content Area */}
+                <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+                  <div className="space-y-4">
+                    {/* Selected Company Display */}
+                    {selectedCompanyForDept && (
+                      <div className={`p-3 rounded border ${
+                        theme === 'dark' ? 'bg-blue-900/20 border-blue-600' : 'bg-blue-50 border-blue-300'
+                      }`}>
+                        <div className="text-xs sm:text-sm font-medium text-blue-600 mb-1">Selected Company:</div>
+                        <div className="font-medium text-sm sm:text-base truncate">{selectedCompanyForDept.company_group_print_name}</div>
+                      </div>
+                    )}
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Select Departments (Optional - Select multiple)</label>
-                    <input
-                      type="text"
-                      placeholder="Search departments..."
-                      value={departmentSearch}
-                      onChange={(e) => setDepartmentSearch(e.target.value)}
-                      className={`w-full px-3 py-2 border rounded-lg text-sm mb-3 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-                        theme === 'dark'
-                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                      }`}
-                    />
-                    
-                    <div className="h-48 sm:h-60 overflow-y-auto border rounded p-2">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                        {DEPARTMENTS
-                          .filter(dept => 
-                            dept.toLowerCase().includes(departmentSearch.toLowerCase())
-                          )
-                          .map((department) => {
-                            const isSelected = selectedDepartments.includes(department);
-                            return (
-                              <div
-                                key={department}
-                                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                                  isSelected 
-                                    ? theme === 'dark' ? 'bg-blue-900/30 border-blue-600' : 'bg-blue-50 border-blue-300'
-                                    : theme === 'dark' ? 'hover:bg-gray-700 border-gray-600' : 'hover:bg-blue-50 border-gray-200'
-                                }`}
-                                onClick={() => {
-                                  if (isSelected) {
-                                    setSelectedDepartments(prev => prev.filter(d => d !== department));
-                                  } else {
-                                    setSelectedDepartments(prev => [...prev, department]);
-                                  }
-                                }}
-                              >
-                                <div className="flex items-center gap-3">
-                                  <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Select Departments (Optional - Select multiple)</label>
+                      <input
+                        type="text"
+                        placeholder="Search departments..."
+                        value={departmentSearch}
+                        onChange={(e) => setDepartmentSearch(e.target.value)}
+                        className={`w-full px-3 py-2 border rounded-lg text-sm mb-3 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                          theme === 'dark'
+                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                            : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                        }`}
+                      />
+                      
+                      <div className="border rounded p-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
+                          {DEPARTMENTS
+                            .filter(dept => 
+                              dept.toLowerCase().includes(departmentSearch.toLowerCase())
+                            )
+                            .map((department) => {
+                              const isSelected = selectedDepartments.includes(department);
+                              return (
+                                <div
+                                  key={department}
+                                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                                     isSelected 
-                                      ? 'bg-blue-500 border-blue-500' 
-                                      : theme === 'dark' ? 'border-gray-400' : 'border-gray-300'
-                                  }`}>
-                                    {isSelected && (
-                                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                      </svg>
-                                    )}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <div className="text-sm font-medium truncate">{department}</div>
+                                      ? theme === 'dark' ? 'bg-blue-900/30 border-blue-600' : 'bg-blue-50 border-blue-300'
+                                      : theme === 'dark' ? 'hover:bg-gray-700 border-gray-600' : 'hover:bg-blue-50 border-gray-200'
+                                  }`}
+                                  onClick={() => {
+                                    if (isSelected) {
+                                      setSelectedDepartments(prev => prev.filter(d => d !== department));
+                                    } else {
+                                      setSelectedDepartments(prev => [...prev, department]);
+                                    }
+                                  }}
+                                >
+                                  <div className="flex items-center gap-3">
+                                    <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                                      isSelected 
+                                        ? 'bg-blue-500 border-blue-500' 
+                                        : theme === 'dark' ? 'border-gray-400' : 'border-gray-300'
+                                    }`}>
+                                      {isSelected && (
+                                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                      )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-sm font-medium truncate">{department}</div>
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                        </div>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Action Buttons for Step 2 */}
-                  <div className="flex flex-col gap-2 pt-3 border-t border-gray-200 dark:border-gray-600">
+                {/* Fixed Action Buttons Area */}
+                <div className="flex-shrink-0 p-3 sm:p-4 border-t border-gray-200 dark:border-gray-600">
+                  <div className="flex flex-col gap-2">
                     {/* Main Action Buttons - Side by Side */}
                     <div className="flex gap-2">
                       <button
@@ -983,8 +1015,8 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                     </div>
                   </div>
                 </div>
-              )}
-            </div>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -993,7 +1025,7 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
       {/* Person Selection Modal */}
       {showPersonModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-in fade-in duration-200">
-          <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg w-full max-w-[95vw] sm:max-w-xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 duration-300`}>
+          <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg w-full max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 duration-300`}>
             <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-purple-500 to-purple-600 text-white flex-shrink-0">
               <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1032,20 +1064,20 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                   />
                 </div>
 
-                <div className="h-32 sm:h-40 overflow-y-auto border rounded">
+                <div className="border rounded p-3">
                   {personsLoading ? (
-                    <div className="text-center py-6 sm:py-8 text-gray-500">
+                    <div className="text-center py-8 text-gray-500">
                       <div className="flex items-center justify-center gap-2">
                         <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0 1 4 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span className="text-xs sm:text-sm">Loading persons...</span>
+                        <span className="text-sm">Loading persons...</span>
                       </div>
                     </div>
                   ) : personsError ? (
-                    <div className="text-center py-6 sm:py-8">
-                      <div className="text-red-500 text-xs sm:text-sm mb-2">{personsError}</div>
+                    <div className="text-center py-8">
+                      <div className="text-red-500 text-sm mb-2">{personsError}</div>
                       <button
                         onClick={() => loadPersons(personSearch)}
                         className="text-xs text-blue-600 hover:text-blue-800 underline"
@@ -1054,34 +1086,40 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
                       </button>
                     </div>
                   ) : persons.length === 0 ? (
-                    <div className="text-center py-6 sm:py-8 text-gray-500">
-                      <div className="text-xs sm:text-sm">No persons found</div>
+                    <div className="text-center py-8 text-gray-500">
+                      <div className="text-sm">No persons found</div>
                       {personSearch && (
                         <div className="text-xs text-gray-400 mt-1">Try a different search term</div>
                       )}
                     </div>
                   ) : (
-                    persons.map((person) => (
-                      <div
-                        key={person.record_id}
-                        className={`p-2 sm:p-3 border-b cursor-pointer hover:bg-purple-50 transition-colors min-h-[60px] flex items-center ${
-                          theme === 'dark' ? 'border-gray-700 hover:bg-purple-900/20' : 'border-gray-200'
-                        }`}
-                        onClick={() => addPersonAssociation(person)}
-                      >
-                        <div className="flex items-center gap-2 sm:gap-3 w-full">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold text-purple-600 dark:text-purple-400 flex-shrink-0">
-                            {person.person_print_name.charAt(0).toUpperCase()}
+                    <div className="grid grid-cols-4 gap-3">
+                      {persons.slice(0, 12).map((person) => (
+                        <div
+                          key={person.record_id}
+                          className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                            theme === 'dark' 
+                              ? 'hover:bg-purple-700/30 border-gray-600'
+                              : 'hover:bg-purple-50 border-gray-200'
+                          } min-h-[70px] flex flex-col justify-between`}
+                          onClick={() => addPersonAssociation(person)}
+                        >
+                          <div className="flex items-start gap-2">
+                            <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-xs font-semibold text-purple-600 dark:text-purple-400 flex-shrink-0">
+                              {person.person_print_name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-medium leading-tight break-words">{person.person_print_name}</div>
+                              <div className="text-xs text-gray-500 mt-1 truncate">{person.full_name}</div>
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs truncate">{person.full_name}</div>
-                          </div>
-                          <svg className="w-4 h-4 text-purple-600 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
                         </div>
-                      </div>
-                    ))
+                      ))}
+                      {/* Fill empty cells to maintain 4x3 grid */}
+                      {Array.from({ length: Math.max(0, 12 - Math.min(persons.length, 12)) }).map((_, index) => (
+                        <div key={`empty-${index}`} className="min-h-[70px] border rounded-lg border-dashed border-gray-200 dark:border-gray-600"></div>
+                      ))}
+                    </div>
                   )}
                 </div>
 

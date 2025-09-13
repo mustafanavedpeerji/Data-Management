@@ -299,27 +299,36 @@ const PersonAddForm: React.FC<PersonAddFormProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  // Company modal functions
-  const loadCompanies = async () => {
+  // Company modal functions - Load companies - show recent 12 companies if no search term, search all when searching
+  const loadCompanies = async (search: string = '') => {
     setLoadingCompanies(true);
     try {
-      // Only get actual companies from companies table
-      const companiesResponse = await apiClient.get('/companies/');
-
-      const allCompanies: Company[] = [];
+      let response;
+      if (search.trim()) {
+        // If search term provided, search from all companies in database
+        response = await apiClient.get(`/companies/search?q=${encodeURIComponent(search)}`);
+      } else {
+        // If no search term, get all companies and take last 12
+        response = await apiClient.get('/companies/all');
+      }
       
-      if (companiesResponse.ok) {
-        const companiesData = await companiesResponse.json();
-        
-        // Only include items that are actually companies
-        const actualCompanies = companiesData.filter((item: any) => 
+      if (response.ok) {
+        const responseData = await response.json();
+        // Filter to only show companies (not groups or divisions)
+        let companyData = responseData.filter((item: Company) => 
           item.company_group_data_type === 'Company'
         );
         
-        allCompanies.push(...actualCompanies);
+        // If no search term, limit to last 12 companies (4x3 grid)
+        if (!search.trim()) {
+          companyData = companyData.slice(-12).reverse(); // Last 12, most recent first
+        }
+        
+        setCompanies(companyData);
+      } else {
+        console.error('Companies API error:', response.status, response.statusText);
+        setCompanies([]);
       }
-      
-      setCompanies(allCompanies);
     } catch (error) {
       console.error('Failed to load companies:', error);
     } finally {
@@ -342,9 +351,7 @@ const PersonAddForm: React.FC<PersonAddFormProps> = ({
 
   const openCompanyModal = () => {
     setShowCompanyModal(true);
-    if (companies.length === 0) {
-      loadCompanies();
-    }
+    loadCompanies(); // Always load companies to get fresh data
   };
 
   const getSelectedCompanyNames = () => {
@@ -353,9 +360,11 @@ const PersonAddForm: React.FC<PersonAddFormProps> = ({
       .filter(Boolean);
   };
 
-  const filteredCompanies = companies.filter(company =>
-    company.company_group_print_name.toLowerCase().includes(companySearch.toLowerCase())
-  );
+  const filteredCompanies = companySearch.trim() 
+    ? companies.filter(company =>
+        company.company_group_print_name.toLowerCase().includes(companySearch.toLowerCase())
+      )
+    : companies;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -701,83 +710,93 @@ const PersonAddForm: React.FC<PersonAddFormProps> = ({
               </button>
             </div>
 
-            {/* Search */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <input
-                type="text"
-                placeholder="Search companies..."
-                value={companySearch}
-                onChange={(e) => setCompanySearch(e.target.value)}
-                className={`w-full px-3 py-2 rounded border ${
-                  theme === 'dark' 
-                    ? 'bg-gray-700 border-gray-600 text-gray-100' 
-                    : 'bg-white border-gray-300'
-                }`}
-              />
-            </div>
-
-            {/* Company List */}
-            <div className="flex-1 overflow-y-auto p-4">
-              {loadingCompanies ? (
-                <div className="text-center py-4">Loading companies...</div>
-              ) : (
-                <div className="space-y-2">
-                  {filteredCompanies.map((company) => (
-                    <div
-                      key={company.record_id}
-                      className={`flex items-center gap-3 p-3 rounded border cursor-pointer transition-colors ${
-                        formData.attached_companies.includes(company.record_id)
-                          ? theme === 'dark'
-                            ? 'bg-blue-900/20 border-blue-500'
-                            : 'bg-blue-50 border-blue-300'
-                          : theme === 'dark'
-                            ? 'bg-gray-700 border-gray-600 hover:bg-gray-600'
-                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
-                      }`}
-                      onClick={() => handleCompanyToggle(company.record_id)}
-                    >
-                      {/* Company UID/Type Badge */}
-                      {company.uid ? (
-                        <div className={`px-2 py-1 rounded text-xs font-mono font-semibold ${
-                          theme === 'dark' ? 'bg-blue-900/20 text-blue-400' : 'bg-blue-100 text-blue-700'
-                        }`}>
-                          {company.uid}
-                        </div>
-                      ) : (
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold ${
-                          company.company_group_data_type === 'Company' 
-                            ? 'bg-blue-100 text-blue-700'
-                            : company.company_group_data_type === 'Group'
-                            ? 'bg-purple-100 text-purple-700'
-                            : 'bg-indigo-100 text-indigo-700'
-                        }`}>
-                          {company.company_group_data_type?.charAt(0) || 'C'}
-                        </div>
-                      )}
-
-                      {/* Company Details */}
-                      <div className="flex-1">
-                        <div className="text-xs">{company.company_group_print_name}</div>
-                      </div>
-
-                      {/* Checkbox */}
-                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                        formData.attached_companies.includes(company.record_id)
-                          ? 'bg-blue-600 border-blue-600'
-                          : theme === 'dark'
-                            ? 'border-gray-600'
-                            : 'border-gray-300'
-                      }`}>
-                        {formData.attached_companies.includes(company.record_id) && (
-                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            {/* Search & Company Grid */}
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Search & Select Companies</label>
+                  <input
+                    type="text"
+                    placeholder="Search companies..."
+                    value={companySearch}
+                    onChange={(e) => {
+                      setCompanySearch(e.target.value);
+                      loadCompanies(e.target.value);
+                    }}
+                    className={`w-full px-3 py-2 border rounded-lg text-sm mb-3 transition-all duration-200 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                      theme === 'dark'
+                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                    }`}
+                  />
+                  
+                  <div className="border rounded p-3">
+                    {loadingCompanies ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <div className="flex items-center justify-center gap-2">
+                          <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0 1 4 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
+                          <span className="text-sm">Loading companies...</span>
+                        </div>
+                      </div>
+                    ) : filteredCompanies.length === 0 ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <div className="text-sm">No companies found</div>
+                        {companySearch && (
+                          <div className="text-xs text-gray-400 mt-1">Try a different search term</div>
                         )}
                       </div>
-                    </div>
-                  ))}
+                    ) : (
+                      <div className="grid grid-cols-4 gap-3">
+                        {filteredCompanies.slice(0, 12).map((company) => {
+                          const isSelected = formData.attached_companies.includes(company.record_id);
+                          return (
+                            <div
+                              key={company.record_id}
+                              className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                                isSelected
+                                  ? theme === 'dark' 
+                                    ? 'bg-purple-900/30 border-purple-600'
+                                    : 'bg-purple-50 border-purple-300'
+                                  : theme === 'dark' 
+                                    ? 'hover:bg-gray-700 border-gray-600'
+                                    : 'hover:bg-purple-50 border-gray-200'
+                              } min-h-[70px] flex flex-col justify-between`}
+                              onClick={() => handleCompanyToggle(company.record_id)}
+                            >
+                              <div className="flex items-start gap-2">
+                                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                                  isSelected 
+                                    ? 'bg-purple-500 border-purple-500' 
+                                    : theme === 'dark' ? 'border-gray-400' : 'border-gray-300'
+                                }`}>
+                                  {isSelected && (
+                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                  )}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-xs font-medium leading-tight break-words">{company.company_group_print_name}</div>
+                                  {company.uid && (
+                                    <div className="text-xs text-gray-500 mt-1 truncate">{company.uid}</div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {/* Fill empty cells to maintain 4x3 grid */}
+                        {Array.from({ length: Math.max(0, 12 - Math.min(filteredCompanies.length, 12)) }).map((_, index) => (
+                          <div key={`empty-${index}`} className="min-h-[70px] border rounded-lg border-dashed border-gray-200 dark:border-gray-600"></div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
 
             {/* Modal Footer */}
