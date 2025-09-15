@@ -12,6 +12,8 @@ interface EmailAssociation {
   company_id?: number;
   departments?: string[];
   person_id?: number;
+  gender?: 'Male' | 'Female';
+  city?: string;
 }
 
 const EmailAddPage: React.FC = () => {

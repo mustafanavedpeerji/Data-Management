@@ -265,7 +265,25 @@ const EmailAddForm: React.FC<EmailAddFormProps> = ({
     if (onSubmit) {
       // Reset the changed flag since user is submitting (saving changes)
       setHasChangedOnce(false);
-      onSubmit(formData, associations);
+      
+      // Create a copy of associations with gender/city added to each one
+      const associationsWithGenderCity = associations.map(assoc => ({
+        ...assoc,
+        gender: formData.gender,
+        city: formData.city
+      }));
+      
+      // If no associations but we have gender/city, create a default association
+      const finalAssociations = associationsWithGenderCity.length > 0 
+        ? associationsWithGenderCity 
+        : (formData.gender || formData.city) 
+          ? [{ gender: formData.gender, city: formData.city }]
+          : [];
+      
+      // Remove gender and city from form data since they go in associations
+      const { gender, city, ...emailData } = formData;
+      
+      onSubmit(emailData, finalAssociations);
     }
   };
 

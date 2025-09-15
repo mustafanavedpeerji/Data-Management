@@ -7,6 +7,8 @@ import apiClient from '../config/apiClient';
 interface CellPhoneFormData {
   phone_number: string;
   is_active: 'Active' | 'Inactive';
+  gender?: 'Male' | 'Female';
+  city?: string;
 }
 
 // Association interface
@@ -15,6 +17,8 @@ interface CellPhoneAssociation {
   company_id?: number;
   departments?: string[];
   person_id?: number;
+  gender?: 'Male' | 'Female';
+  city?: string;
 }
 
 // Department-only association interface
@@ -54,6 +58,19 @@ interface CellPhoneAddFormProps {
 }
 
 
+// Gender options
+const GENDER_OPTIONS = ['Male', 'Female'];
+
+// Pakistani cities
+const PAKISTANI_CITIES = [
+  'Karachi', 'Lahore', 'Islamabad', 'Rawalpindi', 'Faisalabad', 'Multan', 'Peshawar', 'Quetta',
+  'Gujranwala', 'Sialkot', 'Sargodha', 'Bahawalpur', 'Sukkur', 'Larkana', 'Hyderabad',
+  'Rahim Yar Khan', 'Gujrat', 'Kasur', 'Mardan', 'Mingora', 'Dera Ghazi Khan', 'Nawabshah',
+  'Sahiwal', 'Mirpur Khas', 'Okara', 'Burewala', 'Jacobabad', 'Saddiqabad', 'Kohat',
+  'Muridke', 'Muzaffargarh', 'Khanpur', 'Gojra', 'Mandi Bahauddin', 'Abbottabad', 'Turbat',
+  'Dadu', 'Bahawalnagar', 'Ahmadpur East', 'Vihari', 'Kotli', 'Dera Ismail Khan', 'Wah Cantonment'
+];
+
 // Departments (matching backend enum)
 const DEPARTMENTS = [
   'Board Member', 'Management All', 'Management Operations', 'Management Administration',
@@ -84,6 +101,8 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
   const [formData, setFormData] = useState<CellPhoneFormData>(() => ({
     phone_number: '',
     is_active: 'Active',
+    gender: undefined,
+    city: undefined,
     ...initialData,
   }));
 
@@ -114,17 +133,32 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
   const [hasChangedOnce, setHasChangedOnce] = useState(false);
 
   // Load companies
+  // Load companies - show recent 12 companies if no search term, search all when searching
   const loadCompanies = async (search: string = '') => {
     setCompaniesLoading(true);
     setCompaniesError(null);
     try {
-      const response = await apiClient.get(`/companies/search?q=${encodeURIComponent(search)}`);
+      let response;
+      if (search.trim()) {
+        // If search term provided, search from all companies in database
+        response = await apiClient.get(`/companies/search?q=${encodeURIComponent(search)}`);
+      } else {
+        // If no search term, get all companies and take last 12
+        response = await apiClient.get('/companies/all');
+      }
+      
       if (response.ok) {
         const responseData = await response.json();
         // Filter to only show companies (not groups or divisions)
-        const companyData = responseData.filter((item: Company) => 
+        let companyData = responseData.filter((item: Company) => 
           item.company_group_data_type === 'Company'
         );
+        
+        // If no search term, limit to last 12 companies (4x3 grid)
+        if (!search.trim()) {
+          companyData = companyData.slice(-12).reverse(); // Last 12, most recent first
+        }
+        
         setCompanies(companyData);
         setCompaniesError(null);
       } else {
@@ -142,15 +176,40 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
     }
   };
 
-  // Load persons
+  // Load persons - show recent 12 persons if no search term, search all when searching (even single character)
   const loadPersons = async (search: string = '') => {
     setPersonsLoading(true);
     setPersonsError(null);
     try {
-      const response = await apiClient.get(`/persons/search?q=${encodeURIComponent(search)}`);
+      let response;
+      const trimmedSearch = search.trim();
+      
+      if (trimmedSearch.length >= 2) {
+        // If search term is 2+ characters, use search API
+        response = await apiClient.get(`/persons/search?q=${encodeURIComponent(trimmedSearch)}`);
+      } else {
+        // For single character or no search, get all persons and filter client-side
+        response = await apiClient.get('/persons/all');
+      }
+      
       if (response.ok) {
         const responseData = await response.json();
-        setPersons(responseData);
+        
+        if (trimmedSearch.length === 0) {
+          // No search term, show last 12 persons (4x3 grid)
+          const personData = responseData.slice(-12).reverse(); // Last 12, most recent first
+          setPersons(personData);
+        } else if (trimmedSearch.length === 1) {
+          // Single character search - filter all persons client-side
+          const filteredPersons = responseData.filter((person: any) => 
+            person.person_print_name?.toLowerCase().includes(trimmedSearch.toLowerCase()) ||
+            person.full_name?.toLowerCase().includes(trimmedSearch.toLowerCase())
+          );
+          setPersons(filteredPersons.slice(0, 12)); // Limit to first 12 for grid
+        } else {
+          // 2+ character search results from API
+          setPersons(responseData.slice(0, 12));
+        }
         setPersonsError(null);
       } else {
         const errorMsg = `Error ${response.status}: Unable to load persons`;
@@ -231,7 +290,25 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
     if (onSubmit) {
       // Reset the changed flag since user is submitting (saving changes)
       setHasChangedOnce(false);
-      onSubmit(formData, associations);
+      
+      // Create a copy of associations with gender/city added to each one
+      const associationsWithGenderCity = associations.map(assoc => ({
+        ...assoc,
+        gender: formData.gender,
+        city: formData.city
+      }));
+      
+      // If no associations but we have gender/city, create a default association
+      const finalAssociations = associationsWithGenderCity.length > 0 
+        ? associationsWithGenderCity 
+        : (formData.gender || formData.city) 
+          ? [{ gender: formData.gender, city: formData.city }]
+          : [];
+      
+      // Remove gender and city from form data since they go in associations
+      const { gender, city, ...phoneData } = formData;
+      
+      onSubmit(phoneData, finalAssociations);
     }
   };
 
@@ -348,6 +425,36 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
               >
                 <option value="Active">Active</option>
                 <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs mb-1">Gender</label>
+              <select
+                value={formData.gender || ''}
+                onChange={(e) => handleInputChange('gender', e.target.value as 'Male' | 'Female' | undefined)}
+                className={`w-full px-2 py-1 rounded border text-xs ${
+                  theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
+                }`}
+              >
+                <option value="">Select Gender</option>
+                {GENDER_OPTIONS.map(option => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs mb-1">City</label>
+              <select
+                value={formData.city || ''}
+                onChange={(e) => handleInputChange('city', e.target.value)}
+                className={`w-full px-2 py-1 rounded border text-xs ${
+                  theme === 'dark' ? 'bg-gray-700 border-gray-600 text-gray-100' : 'bg-white border-gray-300'
+                }`}
+              >
+                <option value="">Select City</option>
+                {PAKISTANI_CITIES.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -617,7 +724,7 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
       {/* Company Selection Modal */}
       {showCompanyModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-in fade-in duration-200">
-          <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg w-full max-w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 duration-300`}>
+          <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg w-full max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 duration-300`}>
             <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white flex-shrink-0">
               <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -671,59 +778,79 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
                       }`}
                     />
                     
-                    <div className="h-32 sm:h-40 overflow-y-auto border rounded">
+                    <div className="border rounded p-3">
                       {companiesLoading ? (
-                        <div className="text-center py-6 sm:py-8 text-gray-500">
+                        <div className="text-center py-8 text-gray-500">
                           <div className="flex items-center justify-center gap-2">
                             <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                               <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0 1 4 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
-                            <span className="text-xs sm:text-sm">Loading companies...</span>
+                            <span className="text-sm">Loading companies...</span>
                           </div>
                         </div>
                       ) : companiesError ? (
-                        <div className="text-center py-6 sm:py-8">
-                          <div className="text-red-500 text-xs sm:text-sm mb-2">{companiesError}</div>
+                        <div className="text-center py-8">
+                          <div className="text-red-500 text-sm mb-2">{companiesError}</div>
                           <button
                             onClick={() => loadCompanies(companySearch)}
-                            className="text-xs text-green-600 hover:text-green-800 underline"
+                            className="text-xs text-blue-600 hover:text-blue-800 underline"
                           >
                             Try again
                           </button>
                         </div>
                       ) : companies.length === 0 ? (
-                        <div className="text-center py-6 sm:py-8 text-gray-500">
-                          <div className="text-xs sm:text-sm">No companies found</div>
+                        <div className="text-center py-8 text-gray-500">
+                          <div className="text-sm">No companies found</div>
                           {companySearch && (
                             <div className="text-xs text-gray-400 mt-1">Try a different search term</div>
                           )}
                         </div>
                       ) : (
-                        companies.map((company) => (
-                          <div
-                            key={company.record_id}
-                            className={`p-3 border-b cursor-pointer transition-colors ${
-                              selectedCompanyForDept?.record_id === company.record_id
-                                ? theme === 'dark' 
-                                  ? 'bg-green-900/30 border-green-600'
-                                  : 'bg-green-50 border-green-300'
-                                : theme === 'dark' 
-                                  ? 'hover:bg-gray-700 border-gray-700'
-                                  : 'hover:bg-gray-50 border-gray-200'
-                            } min-h-[44px] flex items-center`}
-                            onClick={() => setSelectedCompanyForDept(company)}
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="text-xs truncate">{company.company_group_print_name}</div>
-                            </div>
-                            {selectedCompanyForDept?.record_id === company.record_id && (
-                              <svg className="w-5 h-5 text-green-600 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            )}
-                          </div>
-                        ))
+                        <div className="grid grid-cols-4 gap-3">
+                          {companies.slice(0, 12).map((company) => {
+                            const isSelected = selectedCompanyForDept?.record_id === company.record_id;
+                            return (
+                              <div
+                                key={company.record_id}
+                                className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                                  isSelected
+                                    ? theme === 'dark' 
+                                      ? 'bg-blue-900/30 border-blue-600'
+                                      : 'bg-blue-50 border-blue-300'
+                                    : theme === 'dark' 
+                                      ? 'hover:bg-gray-700 border-gray-600'
+                                      : 'hover:bg-blue-50 border-gray-200'
+                                } min-h-[70px] flex flex-col justify-between`}
+                                onClick={() => setSelectedCompanyForDept(company)}
+                              >
+                                <div className="flex items-start gap-2">
+                                  <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                                    isSelected 
+                                      ? 'bg-blue-500 border-blue-500' 
+                                      : theme === 'dark' ? 'border-gray-400' : 'border-gray-300'
+                                  }`}>
+                                    {isSelected && (
+                                      <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                      </svg>
+                                    )}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="text-xs font-medium leading-tight break-words">{company.company_group_print_name}</div>
+                                    {company.uid && (
+                                      <div className="text-xs text-gray-500 mt-1 truncate">{company.uid}</div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {/* Fill empty cells to maintain 4x3 grid */}
+                          {Array.from({ length: Math.max(0, 12 - Math.min(companies.length, 12)) }).map((_, index) => (
+                            <div key={`empty-${index}`} className="min-h-[70px] border rounded-lg border-dashed border-gray-200 dark:border-gray-600"></div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -925,7 +1052,7 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
       {/* Person Selection Modal */}
       {showPersonModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 animate-in fade-in duration-200">
-          <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg w-full max-w-[95vw] sm:max-w-xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 duration-300`}>
+          <div className={`${theme === 'dark' ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border rounded-lg w-full max-w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-hidden shadow-xl flex flex-col animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 duration-300`}>
             <div className="flex items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-purple-500 to-purple-600 text-white flex-shrink-0">
               <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
                 <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -964,56 +1091,62 @@ const CellPhoneAddForm: React.FC<CellPhoneAddFormProps> = ({
                   />
                 </div>
 
-                <div className="h-32 sm:h-40 overflow-y-auto border rounded">
+                <div className="border rounded p-3">
                   {personsLoading ? (
-                    <div className="text-center py-6 sm:py-8 text-gray-500">
+                    <div className="text-center py-8 text-gray-500">
                       <div className="flex items-center justify-center gap-2">
                         <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
                           <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                           <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 0 1 8-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 0 1 4 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span className="text-xs sm:text-sm">Loading persons...</span>
+                        <span className="text-sm">Loading persons...</span>
                       </div>
                     </div>
                   ) : personsError ? (
-                    <div className="text-center py-6 sm:py-8">
-                      <div className="text-red-500 text-xs sm:text-sm mb-2">{personsError}</div>
+                    <div className="text-center py-8">
+                      <div className="text-red-500 text-sm mb-2">{personsError}</div>
                       <button
                         onClick={() => loadPersons(personSearch)}
-                        className="text-xs text-green-600 hover:text-green-800 underline"
+                        className="text-xs text-blue-600 hover:text-blue-800 underline"
                       >
                         Try again
                       </button>
                     </div>
                   ) : persons.length === 0 ? (
-                    <div className="text-center py-6 sm:py-8 text-gray-500">
-                      <div className="text-xs sm:text-sm">No persons found</div>
+                    <div className="text-center py-8 text-gray-500">
+                      <div className="text-sm">No persons found</div>
                       {personSearch && (
                         <div className="text-xs text-gray-400 mt-1">Try a different search term</div>
                       )}
                     </div>
                   ) : (
-                    persons.map((person) => (
-                      <div
-                        key={person.record_id}
-                        className={`p-2 sm:p-3 border-b cursor-pointer hover:bg-purple-50 transition-colors min-h-[60px] flex items-center ${
-                          theme === 'dark' ? 'border-gray-700 hover:bg-purple-900/20' : 'border-gray-200'
-                        }`}
-                        onClick={() => addPersonAssociation(person)}
-                      >
-                        <div className="flex items-center gap-2 sm:gap-3 w-full">
-                          <div className="w-8 h-8 sm:w-10 sm:h-10 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-xs sm:text-sm font-semibold text-purple-600 dark:text-purple-400 flex-shrink-0">
-                            {person.person_print_name.charAt(0).toUpperCase()}
+                    <div className="grid grid-cols-4 gap-3">
+                      {persons.slice(0, 12).map((person) => (
+                        <div
+                          key={person.record_id}
+                          className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+                            theme === 'dark' 
+                              ? 'hover:bg-purple-700/30 border-gray-600'
+                              : 'hover:bg-purple-50 border-gray-200'
+                          } min-h-[70px] flex flex-col justify-between`}
+                          onClick={() => addPersonAssociation(person)}
+                        >
+                          <div className="flex items-start gap-2">
+                            <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center text-xs font-semibold text-purple-600 dark:text-purple-400 flex-shrink-0">
+                              {person.person_print_name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-medium leading-tight break-words">{person.person_print_name}</div>
+                              <div className="text-xs text-gray-500 mt-1 truncate">{person.full_name}</div>
+                            </div>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-xs truncate">{person.full_name}</div>
-                          </div>
-                          <svg className="w-4 h-4 text-purple-600 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
                         </div>
-                      </div>
-                    ))
+                      ))}
+                      {/* Fill empty cells to maintain 4x3 grid */}
+                      {Array.from({ length: Math.max(0, 12 - Math.min(persons.length, 12)) }).map((_, index) => (
+                        <div key={`empty-${index}`} className="min-h-[70px] border rounded-lg border-dashed border-gray-200 dark:border-gray-600"></div>
+                      ))}
+                    </div>
                   )}
                 </div>
 

@@ -12,6 +12,8 @@ interface CellPhoneAssociation {
   company_id?: number;
   departments?: string[];
   person_id?: number;
+  gender?: 'Male' | 'Female';
+  city?: string;
 }
 
 const CellPhoneAddPage: React.FC = () => {
