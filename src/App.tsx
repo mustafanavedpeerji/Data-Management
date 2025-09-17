@@ -32,6 +32,8 @@ import EmailEditPage from "./pages/EmailEditPage";
 import CellPhonePage from "./pages/CellPhonePage";
 import CellPhoneAddPage from "./pages/CellPhoneAddPage";
 import CellPhoneEditPage from "./pages/CellPhoneEditPage";
+import LocationPage from "./pages/LocationPage";
+import LocationAddPage from "./pages/LocationAddPage";
 
 export default function App() {
   return (
@@ -58,6 +60,8 @@ export default function App() {
             <Route path="/cell-phones" element={<CellPhonePage />} />
             <Route path="/cell-phones/add" element={<CellPhoneAddPage />} />
             <Route path="/cell-phones/edit/:id" element={<CellPhoneEditPage />} />
+            <Route path="/locations" element={<LocationPage />} />
+            <Route path="/locations/add" element={<LocationAddPage />} />
 
             <Route index path="/" element={<Home />} />
 

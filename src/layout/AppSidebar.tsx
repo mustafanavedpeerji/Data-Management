@@ -73,6 +73,14 @@ const navItems: NavItem[] = [
     ],
   },
   {
+    icon: <BoxCubeIcon />,
+    name: "Locations",
+    subItems: [
+      { name: "Add Location", path: "/locations/add", pro: false },
+      { name: "View Locations", path: "/locations", pro: false }
+    ],
+  },
+  {
     icon: <ListIcon />,
     name: "Audit Logs",
     path: "/audit-logs",
